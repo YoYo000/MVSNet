@@ -20,8 +20,6 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-# from scipy.misc import imresize
-
 import matplotlib.pyplot as plt
 
 sys.path.append("../")
@@ -61,7 +59,7 @@ tf.app.flags.DEFINE_integer('depth_start', 1,
                             """Start depth when training.""")
 tf.app.flags.DEFINE_float('depth_interval', 0.75, 
                             """Depth interval when training.""")
-tf.app.flags.DEFINE_integer('max_d', 256, 
+tf.app.flags.DEFINE_integer('max_d', 128, 
                             """Maximum depth step when training.""")
 tf.app.flags.DEFINE_integer('max_w', 640, 
                             """Maximum image width when training.""")
@@ -71,7 +69,7 @@ tf.app.flags.DEFINE_float('sample_scale', 0.25,
                             """Downsample scale for building cost volume.""")
 tf.app.flags.DEFINE_integer('base_image_size', 128, 
                             """Base image size to fit the network.""")
-tf.app.flags.DEFINE_float('interval_scale', 0.8, 
+tf.app.flags.DEFINE_float('interval_scale', 1.6, 
                             """Downsample scale for building cost volume.""")
 tf.app.flags.DEFINE_integer('batch_size', 1, 
                             """training batch size""")
