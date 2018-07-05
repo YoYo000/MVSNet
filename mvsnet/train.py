@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 """
-Copyright 2017, Yao Yao, HKUST.
+Copyright 2018, Yao Yao, HKUST.
 Training script.
 """
 
 from __future__ import print_function
-
-import google.protobuf
-print (google.protobuf.__version__)
 
 import os
 import time
@@ -33,20 +30,12 @@ FLAGS = tf.app.flags.FLAGS
 
 
 # params for datasets
-tf.app.flags.DEFINE_string('sceneflow_data_root', 
-                           '/home/yoyo/Documents/software/GCNetwork/data', 
-                           """Path to sceneflow dataset.""")
-tf.app.flags.DEFINE_string('dtu_data_root', 
-                           '/data/dtu', 
+tf.app.flags.DEFINE_string('dtu_data_root', '/data/dtu/', 
                            """Path to dtu dataset.""")
-tf.app.flags.DEFINE_boolean('train_driving', False, 
-                            """Whether to train.""")
-tf.app.flags.DEFINE_boolean('train_monkaa', False, 
-                            """Whether to train.""")
-tf.app.flags.DEFINE_boolean('train_flyingthings3d', False, 
-                            """Whether to train.""")
-tf.app.flags.DEFINE_boolean('train_kitti', False, 
-                            """Whether to train.""")
+tf.app.flags.DEFINE_string('log_dir', '/data/tf_log',
+                           """Path to store the log.""")
+tf.app.flags.DEFINE_string('save_dir', '/data/tf_model',
+                           """Path to save the model.""")
 tf.app.flags.DEFINE_boolean('train_dtu', True, 
                             """Whether to train.""")
 
@@ -55,10 +44,6 @@ tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """Number of GPUs.""")
 tf.app.flags.DEFINE_integer('view_num', 3, 
                             """Number of images (1 ref image and view_num - 1 view images).""")
-tf.app.flags.DEFINE_integer('depth_start', 1, 
-                            """Start depth when training.""")
-tf.app.flags.DEFINE_float('depth_interval', 0.75, 
-                            """Depth interval when training.""")
 tf.app.flags.DEFINE_integer('max_d', 128, 
                             """Maximum depth step when training.""")
 tf.app.flags.DEFINE_integer('max_w', 640, 
@@ -86,12 +71,6 @@ tf.app.flags.DEFINE_string('pretrained_model_ckpt_path', None,
 #                            """Path to restore the model.""")
 tf.app.flags.DEFINE_integer('ckpt_step', 0,
                             """ckpt step.""")
-tf.app.flags.DEFINE_string('log_dir', '/home/yoyo/Documents/software/tfmatch/mvs/tf_log',
-                           """Path to store the log.""")
-tf.app.flags.DEFINE_string('save_dir', '/home/yoyo/Documents/software/tfmatch/mvs/tf_model',
-                           """Path to save the model.""")
-tf.app.flags.DEFINE_string('list_root', 'list',
-                           """Path to list root""")
 tf.app.flags.DEFINE_boolean('is_training', True,
                             """Flag to training model""")
 
@@ -106,8 +85,6 @@ tf.app.flags.DEFINE_integer('snapshot', 5000,
                             """Step interval to save the model.""")
 tf.app.flags.DEFINE_float('gamma', 0.9,
                           """Learning rate decay rate.""")
-tf.app.flags.DEFINE_float('weight_decay', 0.0001,
-                          """Fraction of regularization term.""")
 
 class MVSGenerator:
     """ data generator class, tf only accept generator without param """
@@ -321,7 +298,6 @@ def train(traning_list):
 def main(argv=None):  # pylint: disable=unused-argument
     """ program entrance """
     # Prepare all training samples
-    # sample_list = gen_mvs_list(mode='training')
     sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root)
     # Shuffle
     random.shuffle(sample_list)

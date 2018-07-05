@@ -1,32 +1,29 @@
 import numpy as np
 import cv2
-import re
 import argparse
-import sys
 import matplotlib.pyplot as plt
-
 from preprocess import load_pfm
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('disp_path')
+    parser.add_argument('depth_path')
     args = parser.parse_args()
-    disp_path = args.disp_path
-    if disp_path.endswith('npy'):
-        disp = np.load(disp_path)
-        disp = np.squeeze(disp)
-        print('value range: ', disp.min(), disp.max())
-        plt.imshow(disp, 'rainbow')
+    depth_path = args.depth_path
+    if depth_path.endswith('npy'):
+        depth_image = np.load(depth_path)
+        depth_image = np.squeeze(depth_image)
+        print('value range: ', depth_image.min(), depth_image.max())
+        plt.imshow(depth_image, 'rainbow')
         plt.show()
-    elif disp_path.endswith('pfm'):
-        disp = load_pfm(open(disp_path))
-        ma = np.ma.masked_equal(disp, 0.0, copy=False)
+    elif depth_path.endswith('pfm'):
+        depth_image = load_pfm(open(depth_path))
+        ma = np.ma.masked_equal(depth_image, 0.0, copy=False)
         print('value range: ', ma.min(), ma.max())
-        plt.imshow(disp, 'rainbow')
+        plt.imshow(depth_image, 'rainbow')
         plt.show()
     else:
-        disp = cv2.imread(disp_path)
-        ma = np.ma.masked_equal(disp, 0.0, copy=False)
+        depth_image = cv2.imread(depth_path)
+        ma = np.ma.masked_equal(depth_image, 0.0, copy=False)
         print('value range: ', ma.min(), ma.max())
-        plt.imshow(disp)
+        plt.imshow(depth_image)
         plt.show()

@@ -1,9 +1,13 @@
-from ipykernel import kernelapp as app
+#!/usr/bin/env python
+"""
+Copyright 2018, Yao Yao, HKUST.
+Differentiable homography related.
+"""
+
 import tensorflow as tf
 import numpy as np
 
 def get_homographies(left_cam, right_cam, depth_num, depth_start, depth_interval):
-
     with tf.name_scope('get_homographies'):
         # cameras (K, R, t)
         R_left = tf.slice(left_cam, [0, 0, 0, 0], [-1, 1, 3, 3])
@@ -67,85 +71,7 @@ def repeat_float(x, num_repeats):
     x = tf.matmul(x, ones)
     return tf.reshape(x, [-1])
 
-def homography_warping_(input_image, homography):
-    with tf.name_scope('warping_by_homography'):
-        image_shape = tf.shape(input_image)
-        batch_size = image_shape[0]
-        height = image_shape[1]
-        width = image_shape[2]
-        num_channels = image_shape[3]
-
-        # turn homography to affine_mat of size (B, 2, 3) and div_mat of size (B, 1, 3)
-        affine_mat = tf.slice(homography, [0, 0, 0], [-1, 2, 3])
-        div_mat = tf.slice(homography, [0, 2, 0], [-1, 1, 3])
-
-        # generate pixel grids
-        b_coords = tf.range(batch_size)
-        y_coords = tf.range(height)
-        x_coords = tf.range(width)
-        b_coords, y_coords, x_coords = tf.meshgrid(b_coords, y_coords, x_coords)
-        b_coords = tf.reshape(b_coords, [-1])
-        y_coords = tf.cast(y_coords, 'float32') + 0.5
-        x_coords = tf.cast(x_coords, 'float32') + 0.5
-        ones = tf.ones_like(x_coords)
-        homo_coords = tf.stack([x_coords, y_coords, ones], axis=3)  # batched
-        homo_coords = tf.transpose(tf.reshape(homo_coords, [batch_size, width * height, 3]), [0, 2, 1])
-
-        # homography = affine + divide tranformation, get warping correspondence
-        affine_coords = tf.matmul(affine_mat, homo_coords)
-        div_coords = tf.matmul(div_mat, homo_coords)
-        div_zero_add = tf.cast(tf.equal(div_coords, 0.0), dtype='float32') * 1e-7 # handle div 0
-        div_coords = div_coords + div_zero_add
-        div_coords = tf.tile(div_coords, [1, 2, 1])
-        warped_coords = tf.div(affine_coords, div_coords)
-        warped_coords = tf.reshape(tf.transpose(warped_coords, [0, 2, 1]), [batch_size * width * height, 2])
-
-        # bilinear interpolation
-        max_y = tf.cast(height - 1, dtype='int32')
-        max_x = tf.cast(width - 1,  dtype='int32')
-        zero = tf.zeros([], dtype='int32')
-        warped_x = tf.reshape(tf.slice(warped_coords, [0, 0], [batch_size * width * height, 1]) - 0.5, [-1])
-        warped_y = tf.reshape(tf.slice(warped_coords, [0, 1], [batch_size * width * height, 1]) - 0.5, [-1])
-        warped_x0 = tf.cast(tf.floor(warped_x), 'int32')
-        warped_x1 = warped_x0 + 1
-        warped_y0 = tf.cast(tf.floor(warped_y), 'int32')
-        warped_y1 = warped_y0 + 1
-        warped_x0 = tf.clip_by_value(warped_x0, zero, max_x)
-        warped_y0 = tf.clip_by_value(warped_y0, zero, max_y)
-        warped_x1 = tf.clip_by_value(warped_x1, zero, max_x)
-        warped_y1 = tf.clip_by_value(warped_y1, zero, max_y)
-        # 4 coordinates
-        warped_coords0 = tf.stack([b_coords, warped_y0, warped_x0], axis=1)
-        warped_coords1 = tf.stack([b_coords, warped_y0, warped_x1], axis=1)
-        warped_coords2 = tf.stack([b_coords, warped_y1, warped_x0], axis=1)
-        warped_coords3 = tf.stack([b_coords, warped_y1, warped_x1], axis=1)
-        # 4 ratios
-        warped_x0 = tf.cast(warped_x0, 'float32')
-        warped_x1 = tf.cast(warped_x1, 'float32')
-        warped_y0 = tf.cast(warped_y0, 'float32')
-        warped_y1 = tf.cast(warped_y1, 'float32')
-        ratio0 = (warped_x1 - warped_x) * (warped_y1 - warped_y)
-        ratio1 = (warped_x1 - warped_x) * (warped_y - warped_y0)
-        ratio2 = (warped_x - warped_x0) * (warped_y1 - warped_y)
-        ratio3 = (warped_x - warped_x0) * (warped_y - warped_y0)
-        ratio0 = tf.reshape(repeat_float(ratio0, num_channels), [-1, num_channels])
-        ratio1 = tf.reshape(repeat_float(ratio1, num_channels), [-1, num_channels])
-        ratio2 = tf.reshape(repeat_float(ratio2, num_channels), [-1, num_channels])
-        ratio3 = tf.reshape(repeat_float(ratio3, num_channels), [-1, num_channels])
-
-        # get wawpred image by gathering
-        warped_image0 = tf.gather_nd(input_image, warped_coords0)
-        warped_image1 = tf.gather_nd(input_image, warped_coords1)
-        warped_image2 = tf.gather_nd(input_image, warped_coords2)
-        warped_image3 = tf.gather_nd(input_image, warped_coords3)
-        warped_image = tf.add_n([ratio0 * warped_image0, ratio1 * warped_image1, 
-                                 ratio2 * warped_image2, ratio3 * warped_image3])
-        warped_image = tf.reshape(warped_image, [batch_size, height, width, num_channels])
-        
-    return warped_image
-
 def interpolate(image, x, y):
-
     image_shape = tf.shape(image)
     batch_size = image_shape[0]
     height =image_shape[1]
@@ -188,7 +114,6 @@ def interpolate(image, x, y):
                         area_b * pixel_values_b,
                         area_c * pixel_values_c,
                         area_d * pixel_values_d])
-
     return output
 
 def homography_warping(input_image, homography):

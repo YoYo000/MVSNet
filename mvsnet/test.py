@@ -28,7 +28,6 @@ FLAGS = tf.app.flags.FLAGS
 # params for datasets
 tf.app.flags.DEFINE_string('dense_folder', None, 
                            """Root path to dense folder.""")
-
 # params for input
 tf.app.flags.DEFINE_integer('view_num', 5,
                             """Number of images (1 ref image and view_num - 1 view images).""")
@@ -38,9 +37,9 @@ tf.app.flags.DEFINE_integer('default_depth_interval', 1,
                             """Depth interval when training.""")
 tf.app.flags.DEFINE_integer('max_d', 192, 
                             """Maximum depth step when training.""")
-tf.app.flags.DEFINE_integer('max_w', 1024, 
+tf.app.flags.DEFINE_integer('max_w', 1152, 
                             """Maximum image width when training.""")
-tf.app.flags.DEFINE_integer('max_h', 768, 
+tf.app.flags.DEFINE_integer('max_h', 864, 
                             """Maximum image height when training.""")
 tf.app.flags.DEFINE_float('sample_scale', 0.25, 
                             """Downsample scale for building cost volume (W and H).""")

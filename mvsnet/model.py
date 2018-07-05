@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Copyright 2017, Yao Yao, HKUST.
+Copyright 2018, Yao Yao, HKUST.
 Model architectures.
 """
 
