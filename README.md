@@ -33,8 +33,8 @@
 * Download the test data for [scan9](https://drive.google.com/file/d/17ZoojQSubtzQhLCWXjxDLznF2vbKz81E/view?usp=sharing) and unzip it as the ``TEST_DATA_FOLDER`` folder, which should contain one ``cams`` folder, one ``images`` folder and one ``pair.txt`` file.
 * Download the pre-trained MVSNet [model](https://drive.google.com/file/d/1i20LF9q3Pti6YoT1Q-5Li-VNu55SBPQS/view?usp=sharing) and upzip it as ``MODEL_FOLDER``.
 * Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``pretrained_model_ckpt_path`` to ``MODEL_FOLDER/model.ckpt``
-* Depth map inference for this test data by ``python test.py --dense_folder TEST_DATA_FOLDER``.
-* Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example below is the depth and probability maps for `scan9` image `00000012`.
+* Test on this dataset ``python test.py --dense_folder TEST_DATA_FOLDER``.
+* Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example the depth map and probability map for image `00000012` should look like:
 
 <img src="doc/image.png" width="250">   | <img src="doc/depth_example.png" width="250"> |  <img src="doc/probability_example.png" width="250">
 :---------------------------------------:|:---------------------------------------:|:---------------------------------------:
@@ -60,10 +60,10 @@ Each project folder should contain the following
 If you want to apply MVSNet to your own data, please structure your data into such a folder.
 
 ### Image Files
-All image files are store in the `images` folder. We index each image using an 8 digit number starting from `00000000`. The following camera and output files use the same indexes as well. 
+All image files are stored in the `images` folder. We index each image using an 8 digit number starting from `00000000`. The following camera and output files use the same indexes as well. 
 
 ### Camera Files
-The camera parameter of one image is store in a ``cam.txt`` file. The text file contains the camera extrinsic `E = [R|t]`, intrinsic `K` and the depth range:
+The camera parameter of one image is stored in a ``cam.txt`` file. The text file contains the camera extrinsic `E = [R|t]`, intrinsic `K` and the depth range:
 ```
 extrinsic
 E00 E01 E02 E03
@@ -78,7 +78,7 @@ K20 K21 K22
 
 DEPTH_MIN DEPTH_INTERVAL
 ```
-Note that the depth range and depth resolution is determined by the minimum depth `DEPTH_MIN`, the interval between two depth samples `DEPTH_INTERVAL`, and also the depth sample number (`max_d` in the training/testing scripts). The `max_d` is left in the scripts for users to flexibly control the depth range. We also left the `interval_scale` for controlling the depth resolution. The maximum depth is computed as:
+Note that the depth range and depth resolution are determined by the minimum depth `DEPTH_MIN`, the interval between two depth samples `DEPTH_INTERVAL`, and also the depth sample number (`max_d` in the training/testing scripts). The `max_d` is left in the scripts for users to flexibly control the depth range. We also left the `interval_scale` for controlling the depth resolution. The maximum depth is then computed as:
 ```
 DEPTH_MAX = DEPTH_MIN + (interval_scale * DEPTH_INTERVAL) * (max_d - 1)
 ``` 
@@ -96,7 +96,7 @@ IMAGE_ID1                       # index of reference image 1
 
 
 ### Output Format
-MVSNet will create a `depths_mvsnet` folder to store the running results, including the depth maps, probability maps, scaled/cropped images and the corresponding cameras. The depth and probability maps are stored in the `.pfm` format. We provide the python IO for `.pfm` in the `preprocess.py` script, and for the c++ IO, we refer users to the [Cimg](http://cimg.eu/) library. To inspect the `.pfm` results, you can simply type `python visualize.py .pfm`. 
+MVSNet will create a `depths_mvsnet` folder to store the running results, including the depth maps, probability maps, scaled/cropped images and the corresponding cameras. The depth and probability maps are stored in `.pfm` format. We provide the python IO for pfm files in the `preprocess.py` script, and for the c++ IO, we refer users to the [Cimg](http://cimg.eu/) library. To inspect the pfm format results, you can simply type `python visualize.py .pfm`. 
 
 
 
