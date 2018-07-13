@@ -1,4 +1,4 @@
-tensorflow-gpu>=1.4
+tensorflow-gpu>=1.5
 progressbar2>=3.0
 numpy>=1.13
 opencv-python>=3.2

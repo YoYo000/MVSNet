@@ -44,7 +44,7 @@ reference image                          |depth map                             
 
 ## File Formats
 
-Each project folder should contains the following
+Each project folder should contain the following
 ```
 .                          
 ├── images                 
