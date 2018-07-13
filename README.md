@@ -34,10 +34,72 @@
 * Download the pre-trained MVSNet [model](https://drive.google.com/file/d/1i20LF9q3Pti6YoT1Q-5Li-VNu55SBPQS/view?usp=sharing) and upzip it as ``MODEL_FOLDER``.
 * Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``pretrained_model_ckpt_path`` to ``MODEL_FOLDER/model.ckpt``
 * Depth map inference for this test data by ``python test.py --dense_folder TEST_DATA_FOLDER``.
-* Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``
+* Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example below is the depth and probability maps for `scan9` image `00000012`.
+
+![](doc/depth_example.png)               |  ![](doc/probability_example.png)
+:---------------------------------------:|:---------------------------------------:
+depth map                                |  probability map 
 
 
-### Todo
 
-* File formats 
+## File Formats
+
+Each project folder should contains the following
+```
+.                          
+├── images                 
+│   ├── 00000000.jpg       
+│   ├── 00000001.jpg       
+│   └── ...                
+├── cams                   
+│   ├── 00000000_cam.txt   
+│   ├── 00000001_cam.txt   
+│   └── ...                
+└── pair.txt               
+```
+If you want to apply MVSNet to your own data, please structure your data into such a folder.
+
+### Image Files
+All image files are store in the `images` folder. We index each image using an 8 digit number starting from `00000000`. The following camera and output files use the same indexes as well. 
+
+### Camera Files
+The camera parameter of one image is store in a ``cam.txt`` file. The text file contains the camera extrinsic `E = [R|t]`, intrinsic `K` and the depth range:
+```
+extrinsic
+E00 E01 E02 E03
+E10 E11 E12 E13
+E20 E21 E22 E23
+E30 E31 E32 E33
+
+intrinsic
+K00 K01 K02
+K10 K11 K12
+K20 K21 K22
+
+DEPTH_MIN DEPTH_INTERVAL
+```
+Note that the depth range and depth resolution is determined by the minimum depth `DEPTH_MIN`, the interval between two depth samples `DEPTH_INTERVAL`, and also the depth sample number (`max_d` in the training/testing scripts). The `max_d` is left in the scripts for users to flexibly control the depth range. We also left the `interval_scale` for controlling the depth resolution. The maximum depth is computed as:
+```
+DEPTH_MAX = DEPTH_MIN + (interval_scale * DEPTH_INTERVAL) * (max_d - 1)
+``` 
+
+### View Selection File
+We store the view selection result in the `pair.txt`. For each reference image, we calculate its view selection scores with each of the other views, and store the 10 best views in the pair.txt file:
+```
+TOTAL_IMAGE_NUM
+IMAGE_ID0                       # index of reference image 0 
+10 ID0 SCORE0 ID1 SCORE1 ...    # 10 best source images for reference image 0 
+IMAGE_ID1                       # index of reference image 1
+10 ID0 SCORE0 ID1 SCORE1 ...    # 10 best source images for reference image 1 
+...
+``` 
+
+
+### Output Format
+MVSNet will create a `depths_mvsnet` folder to store the running results, including the depth maps, probability maps, scaled/cropped images and the corresponding cameras. The depth and probability maps are stored in the `.pfm` format. We provide the python IO for `.pfm` in the `preprocess.py` script, and for the c++ IO, we refer users to the [Cimg](http://cimg.eu/) library. To inspect the `.pfm` results, you can simply type `python visualize.py .pfm`. 
+
+
+
+## Todo
+
 * Post-processing.
