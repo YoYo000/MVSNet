@@ -8,7 +8,7 @@
 @article{yao2018mvsnet,
   title={MVSNet: Depth Inference for Unstructured Multi-view Stereo},
   author={Yao, Yao and Luo, Zixin and Li, Shiwei and Fang, Tian and Quan, Long},
-  journal={arXiv preprint arXiv:1804.02505},
+  journal={European Conference on Computer Vision (ECCV)},
   year={2018}
 }
 ```
