@@ -36,7 +36,7 @@
 * Depth map inference for this test data by ``python test.py --dense_folder TEST_DATA_FOLDER``.
 * Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example below is the depth and probability maps for `scan9` image `00000012`.
 
-![](doc/image.png)                       |![](doc/depth_example.png)               |  ![](doc/probability_example.png)
+![](doc/image.png=300x225)                       |![](doc/depth_example.png=300x225)               |  ![](doc/probability_example.png=300x225)
 :---------------------------------------:|:---------------------------------------:|:---------------------------------------:
 reference image                          |depth map                                |  probability map 
 
