@@ -18,7 +18,7 @@
 ### Installation
 
 * check out the source code ```git clone https://github.com/YoYo000/MVSNet```
-* Install cuda 9.0 and cudnn 7.0
+* Install cuda 9.0, cudnn 7.0 and python 2.7
 * Install Tensorflow and other dependencies by ```sudo pip install -r requirements.txt```
 
 ### Training
