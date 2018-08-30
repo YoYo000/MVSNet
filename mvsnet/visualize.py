@@ -3,6 +3,7 @@ import cv2
 import argparse
 import matplotlib.pyplot as plt
 from preprocess import load_pfm
+from mvsnet2gipuma import read_gipuma_dmb
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -17,6 +18,12 @@ if __name__ == '__main__':
         plt.show()
     elif depth_path.endswith('pfm'):
         depth_image = load_pfm(open(depth_path))
+        ma = np.ma.masked_equal(depth_image, 0.0, copy=False)
+        print('value range: ', ma.min(), ma.max())
+        plt.imshow(depth_image, 'rainbow')
+        plt.show()
+    elif depth_path.endswith('dmb'):
+        depth_image = read_gipuma_dmb(depth_path)
         ma = np.ma.masked_equal(depth_image, 0.0, copy=False)
         print('value range: ', ma.min(), ma.max())
         plt.imshow(depth_image, 'rainbow')

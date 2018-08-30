@@ -121,13 +121,18 @@ class MVSGenerator:
                     centered_images.append(center_image(croped_images[view]))
 
                 # sample cameras for building cost volume
+                real_cams = np.copy(croped_cams) 
                 scaled_cams = scale_mvs_camera(croped_cams, scale=FLAGS.sample_scale)
 
                 # return mvs input
+                scaled_images = []
+                for view in range(self.view_num):
+                    scaled_images.append(scale_image(croped_images[view], scale=FLAGS.sample_scale))
+                scaled_images = np.stack(scaled_images, axis=0)
                 croped_images = np.stack(croped_images, axis=0)
                 scaled_cams = np.stack(scaled_cams, axis=0)
                 self.counter += 1
-                yield (croped_images, centered_images, scaled_cams, image_index) 
+                yield (scaled_images, centered_images, scaled_cams, real_cams, image_index) 
 
 def mvsnet_pipeline(mvs_list):
     """ mvsnet in altizure pipeline """
@@ -140,14 +145,14 @@ def mvsnet_pipeline(mvs_list):
 
     # Training and validation generators
     mvs_generator = iter(MVSGenerator(mvs_list, FLAGS.view_num))
-    generator_data_type = (tf.float32, tf.float32, tf.float32, tf.int32)    
+    generator_data_type = (tf.float32, tf.float32, tf.float32, tf.float32, tf.int32)    
     # Datasets from generators
     mvs_set = tf.data.Dataset.from_generator(lambda: mvs_generator, generator_data_type)
     mvs_set = mvs_set.batch(FLAGS.batch_size)
     # iterators
     mvs_iterator = mvs_set.make_initializable_iterator()
     # data
-    croped_images, centered_images, scaled_cams, image_index = mvs_iterator.get_next()
+    croped_images, centered_images, scaled_cams, croped_cams, image_index = mvs_iterator.get_next()
     croped_images.set_shape(tf.TensorShape([None, FLAGS.view_num, None, None, 3]))
     centered_images.set_shape(tf.TensorShape([None, FLAGS.view_num, None, None, 3]))
     scaled_cams.set_shape(tf.TensorShape([None, FLAGS.view_num, 2, 4, 4]))
@@ -216,7 +221,7 @@ def mvsnet_pipeline(mvs_list):
             depth_map_path = output_folder + ('/%08d.pfm' % out_index)
             init_depth_map_path = output_folder + ('/%08d_init.pfm' % out_index)
             prob_map_path = output_folder + ('/%08d_prob.pfm' % out_index)
-            out_ref_image_path = output_folder + ('/%08d.png' % out_index)
+            out_ref_image_path = output_folder + ('/%08d.jpg' % out_index)
             out_ref_cam_path = output_folder + ('/%08d.txt' % out_index)
 
             # save output
