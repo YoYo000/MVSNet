@@ -56,7 +56,7 @@ We observe that the point cloud output of ``depthfusion.py`` is very similar to 
 
 <img src="doc/fused_point_cloud.png" width="375">   | <img src="doc/gt_point_cloud.png" width="375"> 
 :--------------------------------------------------:|:----------------------------------------------:
-        point cloud result                          |    ground truth point cloud
+       point cloud result                          |    ground truth point cloud
 
 
 
