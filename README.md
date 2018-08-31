@@ -46,13 +46,12 @@ reference image                          |depth map                             
 MVSNet itself only produces per-view depth maps. To generate the 3D point cloud, we need to apply depth map filter/fusion for post-processing. As our implementation of this part is depended on the [Altizure](https://www.altizure.com/) internal library, currently we could not provide the corresponding code. Fortunately, depth map filter/fusion is a general step in MVS reconstruction, and there are similar implementations in other open-source MVS algorithms. We provide the script ``depthfusion.py`` to utilize [fusibile](https://github.com/kysucix/fusibile) for post-processing (thank Silvano Galliani for the excellent code!). 
 
 To run the post-processing: 
-* Check out fusibile  ```git clone https://github.com/kysucix/fusibile.git```
-* In ``fusibile.cu``, comment out line 265 to line 271, as we do not want to merge points during depth map fusion
-* Install fusibile by ```cmake .``` and ```make```, which will generate the fusibile executable at ``FUSIBILE_EXE_PATH``
+* Check out the modified version fusibile ```git clone https://github.com/YoYo000/fusibile```
+* Install fusibile by ```cmake .``` and ```make```, which will generate the executable at ``FUSIBILE_EXE_PATH``
 * Run post-processing ``python depthfusion.py --dense_folder TEST_DATA_FOLDER --fusibile_exe_path FUSIBILE_EXE_PATH``
-* Final point cloud result is stored in `TEST_DATA_FOLDER/points_mvsnet/consistencyCheck-TIME/final3d_model.ply`.
+* The final point cloud is stored in `TEST_DATA_FOLDER/points_mvsnet/consistencyCheck-TIME/final3d_model.ply`.
 
-We observe that the point cloud output of ``depthfusion.py`` is very similar to our own implementation. For detail differences, please refer to [MVSNet paper](https://arxiv.org/abs/1804.02505) and [Galliani' paper](https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Galliani_Massively_Parallel_Multiview_ICCV_2015_paper.pdf)
+We observe that the point cloud output of ``depthfusion.py`` is very similar to our own implementation. For detailed differences, please refer to [MVSNet paper](https://arxiv.org/abs/1804.02505) and [Galliani's paper](https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Galliani_Massively_Parallel_Multiview_ICCV_2015_paper.pdf)
 
 ## File Formats
 
