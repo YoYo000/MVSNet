@@ -3,7 +3,7 @@ import cv2
 import argparse
 import matplotlib.pyplot as plt
 from preprocess import load_pfm
-from mvsnet2gipuma import read_gipuma_dmb
+from depthfusion import read_gipuma_dmb
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

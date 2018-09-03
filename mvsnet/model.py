@@ -43,16 +43,20 @@ def get_propability_map(cv, depth_map, depth_start, depth_interval):
 
     # d coordinate (floored and ceiled), batched & flattened
     d_coordinates = tf.reshape((depth_map - depth_start) / depth_interval, [-1])
-    d_coordinates_left0 = tf.clip_by_value(tf.cast(tf.floor(d_coordinates), 'int32'), 0, depth)
-    d_coordinates_left1 = tf.clip_by_value(d_coordinates_left0 - 1, 0, depth)
-    d_coordinates1_right0 = tf.clip_by_value(tf.cast(tf.ceil(d_coordinates), 'int32'), 0, depth)
-    d_coordinates1_right1 = tf.clip_by_value(d_coordinates1_right0 + 1, 0, depth)
+    d_coordinates_left0 = tf.clip_by_value(tf.cast(tf.floor(d_coordinates), 'int32'), 0, depth - 1)
+    d_coordinates_left1 = tf.clip_by_value(d_coordinates_left0 - 1, 0, depth - 1)
+    d_coordinates1_right0 = tf.clip_by_value(tf.cast(tf.ceil(d_coordinates), 'int32'), 0, depth - 1)
+    d_coordinates1_right1 = tf.clip_by_value(d_coordinates1_right0 + 1, 0, depth - 1)
 
     # voxel coordinates
-    voxel_coordinates_left0 = tf.stack([b_coordinates, d_coordinates_left0, y_coordinates, x_coordinates], axis=1)
-    voxel_coordinates_left1 = tf.stack([b_coordinates, d_coordinates_left1, y_coordinates, x_coordinates], axis=1)
-    voxel_coordinates_right0 = tf.stack([b_coordinates, d_coordinates1_right0, y_coordinates, x_coordinates], axis=1)
-    voxel_coordinates_right1 = tf.stack([b_coordinates, d_coordinates1_right1, y_coordinates, x_coordinates], axis=1)
+    voxel_coordinates_left0 = tf.stack(
+        [b_coordinates, d_coordinates_left0, y_coordinates, x_coordinates], axis=1)
+    voxel_coordinates_left1 = tf.stack(
+        [b_coordinates, d_coordinates_left1, y_coordinates, x_coordinates], axis=1)
+    voxel_coordinates_right0 = tf.stack(
+        [b_coordinates, d_coordinates1_right0, y_coordinates, x_coordinates], axis=1)
+    voxel_coordinates_right1 = tf.stack(
+        [b_coordinates, d_coordinates1_right1, y_coordinates, x_coordinates], axis=1)
 
     # get probability image by gathering and interpolation
     prob_map_left0 = tf.gather_nd(cv, voxel_coordinates_left0)
