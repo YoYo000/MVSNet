@@ -23,7 +23,7 @@
 
 ### Training
 
-* Download the preprocessed [DTU training data](https://drive.google.com/file/d/1dsGZxR9vQy4dY3wNzSwUWop-ZmQqouk1/view?usp=sharing) (see the paper), and upzip it as the ``MVS_TRANING`` folder.
+* Download the preprocessed [DTU training data](https://drive.google.com/file/d/1eDjh-_bxKKnEuz5h-HXS7EDJn59clx6V/view) (Fixed training cameras, Sep. 19), and upzip it as the ``MVS_TRANING`` folder.
 * Enter the ``MVSNet/mvsnet`` folder, in ``train.py``, set ``dtu_data_root`` to your ``MVS_TRANING`` path.
 * Create a log folder and a model folder in wherever you like to save the training outputs. Set the ``log_dir`` and ``save_dir`` in ``train.py`` correspondingly.
 * Train the network ``python train.py``
