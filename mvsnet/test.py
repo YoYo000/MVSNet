@@ -22,9 +22,6 @@ from tools.common import Notify
 from preprocess import *
 from model import *
 
-FLAGS = tf.app.flags.FLAGS
-
-
 # params for datasets
 tf.app.flags.DEFINE_string('dense_folder', None, 
                            """Root path to dense folder.""")
@@ -56,6 +53,7 @@ tf.app.flags.DEFINE_string('pretrained_model_ckpt_path',
                            """Path to restore the model.""")
 tf.app.flags.DEFINE_integer('ckpt_step', 70000,
                             """ckpt step.""")
+FLAGS = tf.app.flags.FLAGS
 
 class MVSGenerator:
     """ data generator class, tf only accept generator without param """
@@ -235,22 +233,13 @@ def mvsnet_pipeline(mvs_list):
             total_step += 1
 
 
-def main(argv=None):  # pylint: disable=unused-argument
+def main(_):  # pylint: disable=unused-argument
     """ program entrance """
     # generate input path list
     mvs_list = gen_pipeline_mvs_list(FLAGS.dense_folder)
     # mvsnet inference
     mvsnet_pipeline(mvs_list)
 
+
 if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dense_folder', type=str, default = FLAGS.dense_folder)
-    parser.add_argument('--view_num', type=int, default = FLAGS.view_num)
-    args = parser.parse_args()
-
-    FLAGS.dense_folder = args.dense_folder
-    FLAGS.view_num = args.view_num
-    print ('Testing MVSNet with %d views' % args.view_num)
-
     tf.app.run()
