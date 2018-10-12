@@ -26,9 +26,6 @@ from preprocess import *
 from model import inference, mvsnet_loss, depth_refine
 from homography_warping import get_homographies, homography_warping
 
-FLAGS = tf.app.flags.FLAGS
-
-
 # params for datasets
 tf.app.flags.DEFINE_string('dtu_data_root', '/data/dtu/', 
                            """Path to dtu dataset.""")
@@ -85,6 +82,8 @@ tf.app.flags.DEFINE_integer('snapshot', 5000,
                             """Step interval to save the model.""")
 tf.app.flags.DEFINE_float('gamma', 0.9,
                           """Learning rate decay rate.""")
+
+FLAGS = tf.app.flags.FLAGS
 
 class MVSGenerator:
     """ data generator class, tf only accept generator without param """
@@ -306,15 +305,5 @@ def main(argv=None):  # pylint: disable=unused-argument
 
 
 if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--ckpt_step', type=int, default = FLAGS.ckpt_step)
-    parser.add_argument('--view_num', type=int, default = FLAGS.view_num)
-    args = parser.parse_args()
-
-    FLAGS.ckpt_step = args.ckpt_step
-    FLAGS.view_num = args.view_num
-    print ('Training MVSNet with %d views' % args.view_num)
-
-
+    print ('Training MVSNet with %d views' % FLAGS.view_num)
     tf.app.run()
