@@ -151,21 +151,39 @@ def mvsnet_to_gipuma(dense_folder, gipuma_point_folder):
         sub_depth_folder = os.path.join(gipuma_point_folder, gipuma_prefix+image_prefix)
         if not os.path.isdir(sub_depth_folder):
             os.mkdir(sub_depth_folder)
-        in_depth_pfm = os.path.join(depth_folder, image_prefix+'_init.pfm')
+        in_depth_pfm = os.path.join(depth_folder, image_prefix+'_prob_filtered.pfm')
         out_depth_dmb = os.path.join(sub_depth_folder, 'disp.dmb')
         fake_normal_dmb = os.path.join(sub_depth_folder, 'normals.dmb')
         mvsnet_to_gipuma_dmb(in_depth_pfm, out_depth_dmb)
         fake_colmap_normal(out_depth_dmb, fake_normal_dmb)
 
-def depth_map_fusion(point_folder, fusibile_exe_path):
+
+def probability_filter(dense_folder, prob_threshold):
+    image_folder = os.path.join(dense_folder, 'images')
+    depth_folder = os.path.join(dense_folder, 'depths_mvsnet')
+    
+    # convert cameras 
+    image_names = os.listdir(image_folder)
+    for image_name in image_names:
+        image_prefix = os.path.splitext(image_name)[0]
+        init_depth_map_path = os.path.join(depth_folder, image_prefix+'_init.pfm')
+        prob_map_path = os.path.join(depth_folder, image_prefix+'_prob.pfm')
+        out_depth_map_path = os.path.join(depth_folder, image_prefix+'_prob_filtered.pfm')
+
+
+        depth_map = load_pfm(open(init_depth_map_path))
+        prob_map = load_pfm(open(prob_map_path))
+        depth_map[prob_map < prob_threshold] = 0
+        write_pfm(out_depth_map_path, depth_map)
+
+
+def depth_map_fusion(point_folder, fusibile_exe_path, disp_thresh, num_consistent):
 
     cam_folder = os.path.join(point_folder, 'cams')
     image_folder = os.path.join(point_folder, 'images')
-    depth_min = 0.1
+    depth_min = 0.001
     depth_max = 100000
     normal_thresh = 360
-    disp_thresh = 1
-    num_consistent = 3
 
     cmd = fusibile_exe_path
     cmd = cmd + ' -input_folder ' + point_folder + '/'
@@ -185,15 +203,25 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dense_folder', type=str, default = '')
-    parser.add_argument('--fusibile_exe_path', type=str, default = '')
+    parser.add_argument('--fusibile_exe_path', type=str, default = '/home/yoyo/Documents/software/fusibile/fusibile')
+    parser.add_argument('--prob_threshold', type=float, default = '0.8')
+    parser.add_argument('--disp_threshold', type=float, default = '0.25')
+    parser.add_argument('--num_consistent', type=float, default = '3')
     args = parser.parse_args()
 
     dense_folder = args.dense_folder
     fusibile_exe_path = args.fusibile_exe_path
+    prob_threshold = args.prob_threshold
+    disp_threshold = args.disp_threshold
+    num_consistent = args.num_consistent
 
     point_folder = os.path.join(dense_folder, 'points_mvsnet')
     if not os.path.isdir(point_folder):
         os.mkdir(point_folder)
+
+    # probability filter
+    print ('filter depth map with probability map')
+    probability_filter(dense_folder, prob_threshold)
 
     # convert to gipuma format
     print ('Convert mvsnet output to gipuma input')
@@ -201,4 +229,4 @@ if __name__ == '__main__':
 
     # depth map fusion with gipuma 
     print ('Run depth map fusion & filter')
-    depth_map_fusion(point_folder, fusibile_exe_path)
+    depth_map_fusion(point_folder, fusibile_exe_path, disp_threshold, num_consistent)

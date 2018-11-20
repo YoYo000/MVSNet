@@ -244,10 +244,10 @@ def inference_mem(images, cams, depth_num, depth_start, depth_interval, is_maste
     # probability map
     prob_map = get_propability_map(probability_volume, estimated_depth_map, depth_start, depth_interval)
 
-    filtered_depth_map = tf.cast(tf.greater_equal(prob_map, 0.8), dtype='float32') * estimated_depth_map
+    # filtered_depth_map = tf.cast(tf.greater_equal(prob_map, 0.8), dtype='float32') * estimated_depth_map
 
-    return filtered_depth_map, prob_map
-    # return estimated_depth_map, prob_map
+    # return filtered_depth_map, prob_map
+    return estimated_depth_map, prob_map
 
 
 def depth_refine(init_depth_map, image, depth_num, depth_start, depth_interval, is_master_gpu=True):
