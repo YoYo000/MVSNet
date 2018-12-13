@@ -141,14 +141,16 @@ def mvsnet_pipeline(mvs_list):
     if not os.path.isdir(output_folder):
         os.mkdir(output_folder)
 
-    # Training and validation generators
+    # Training generator
     mvs_generator = iter(MVSGenerator(mvs_list, FLAGS.view_num))
-    generator_data_type = (tf.float32, tf.float32, tf.float32, tf.float32, tf.int32)    
-    # Datasets from generators
+    generator_data_type = (tf.float32, tf.float32, tf.float32, tf.float32, tf.int32)
     mvs_set = tf.data.Dataset.from_generator(lambda: mvs_generator, generator_data_type)
     mvs_set = mvs_set.batch(FLAGS.batch_size)
+    mvs_set = mvs_set.prefetch(buffer_size=1)
+    
     # iterators
     mvs_iterator = mvs_set.make_initializable_iterator()
+    
     # data
     croped_images, centered_images, scaled_cams, croped_cams, image_index = mvs_iterator.get_next()
     croped_images.set_shape(tf.TensorShape([None, FLAGS.view_num, None, None, 3]))

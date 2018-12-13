@@ -170,6 +170,7 @@ def train(traning_list):
         # dataset from generator
         training_set = tf.data.Dataset.from_generator(lambda: training_generator, generator_data_type)
         training_set = training_set.batch(FLAGS.batch_size)
+        training_set = training_set.prefetch(buffer_size=1)
         # iterators
         training_iterator = training_set.make_initializable_iterator()
 
@@ -205,6 +206,7 @@ def train(traning_list):
                     ref_image = tf.squeeze(tf.slice(images, [0, 0, 0, 0, 0], [-1, 1, -1, -1, 3]), axis=1)
                     refined_depth_map = depth_refine(
                         depth_map, ref_image, FLAGS.max_d, depth_start, depth_interval, is_master_gpu)
+                    
                     # loss
                     loss0, less_one_temp, less_three_temp = mvsnet_loss(
                         depth_map, depth_image, depth_interval)
@@ -220,8 +222,10 @@ def train(traning_list):
 
                     # keep track of the gradients across all towers.
                     tower_grads.append(grads)
+        
         # average gradient
         grads = average_gradients(tower_grads)
+        
         # training opt
         train_opt = opt.apply_gradients(grads, global_step=global_step)
 
@@ -236,10 +240,10 @@ def train(traning_list):
         for grad, var in grads:
             if grad is not None:
                 summaries.append(tf.summary.histogram(var.op.name + '/gradients', grad))
+        
         # saver
         saver = tf.train.Saver(tf.global_variables(), max_to_keep=None)        
         summary_op = tf.summary.merge(summaries)
-
 
         # initialization option
         init_op = tf.global_variables_initializer()
@@ -247,6 +251,7 @@ def train(traning_list):
         config.gpu_options.allow_growth = True
 
         with tf.Session(config=config) as sess:     
+            
             # initialization
             total_step = 0
             sess.run(init_op)
@@ -284,9 +289,11 @@ def train(traning_list):
                         print(Notify.INFO,
                             'epoch, %d, step %d, total_step %d, loss = %.4f, (< 1px) = %.4f, (< 3px) = %.4f (%.3f sec/step)' %
                             (epoch, step, total_step, out_loss, out_less_one, out_less_three, duration), Notify.ENDC)
+                    
                     # write summary
                     if step % (FLAGS.display * 10) == 0 and FLAGS.is_training:
                         summary_writer.add_summary(out_summary_op, total_step)
+                   
                     # save the model checkpoint periodically
                     if (total_step % FLAGS.snapshot == 0 or step == (training_sample_size - 1)) and FLAGS.is_training:
                         checkpoint_path = os.path.join(FLAGS.save_dir, 'model.ckpt')
