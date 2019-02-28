@@ -12,6 +12,14 @@
   year={2018}
 }
 ```
+```
+@article{yao2018mvsnet,
+  title={Recurrent MVSNet for High-resolution Multi-view Stereo Depth Inference},
+  author={Yao, Yao and Luo, Zixin and Li, Shiwei and Shen, Tianwei and Fang, Tian and Quan, Long},
+  journal={Computer Vision and Pattern Recognition (CVPR)},
+  year={2019}
+}
+```
 
 ## How to Use
 
@@ -115,6 +123,12 @@ IMAGE_ID1                       # index of reference image 1
 
 ### Output Format
 The ``test.py`` script will create a `depths_mvsnet` folder to store the running results, including the depth maps, probability maps, scaled/cropped images and the corresponding cameras. The depth and probability maps are stored in `.pfm` format. We provide the python IO for pfm files in the `preprocess.py` script, and for the c++ IO, we refer users to the [Cimg](http://cimg.eu/) library. To inspect the pfm format results, you can simply type `python visualize.py .pfm`. 
+
+## Todo
+
+### Recurrent MVSNet 
+
+### View and depth sample selections from Altizure/COLMAP/OpenMVG SfM output 
 
 ## Changelog
 
