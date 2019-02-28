@@ -1,9 +1,7 @@
-# MVSNet
-<p align="center"><img width="100%" src="doc/network.png" /></p>
-
+# MVSNet & R-MVSNet
 
 ## About
-[MVSNet](https://arxiv.org/abs/1804.02505) is a deep learning architecture for depth map inference from unstructured multi-view images. If you find this project useful for your research, please cite:
+[MVSNet](https://arxiv.org/abs/1804.02505) is a deep learning architecture for depth map inference from unstructured multi-view images, and [R-MVSNet](https://arxiv.org/abs/1902.10556) is its extension for scalable learning-based MVS reconstruction. If you find this project useful for your research, please cite:
 ```
 @article{yao2018mvsnet,
   title={MVSNet: Depth Inference for Unstructured Multi-view Stereo},
@@ -13,7 +11,7 @@
 }
 ```
 ```
-@article{yao2018mvsnet,
+@article{yao2019recurrent,
   title={Recurrent MVSNet for High-resolution Multi-view Stereo Depth Inference},
   author={Yao, Yao and Luo, Zixin and Li, Shiwei and Shen, Tianwei and Fang, Tian and Quan, Long},
   journal={Computer Vision and Pattern Recognition (CVPR)},
@@ -126,9 +124,9 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 
 ## Todo
 
-### Recurrent MVSNet 
-
-### View and depth sample selections from Altizure/COLMAP/OpenMVG SfM output 
+* Recurrent MVSNet 
+* View selection from Altizure/COLMAP/OpenMVG SfM output 
+* Depth sample selection from Altizure/COLMAP/OpenMVG SfM output 
 
 ## Changelog
 
