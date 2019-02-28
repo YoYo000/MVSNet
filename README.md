@@ -116,5 +116,9 @@ IMAGE_ID1                       # index of reference image 1
 ### Output Format
 The ``test.py`` script will create a `depths_mvsnet` folder to store the running results, including the depth maps, probability maps, scaled/cropped images and the corresponding cameras. The depth and probability maps are stored in `.pfm` format. We provide the python IO for pfm files in the `preprocess.py` script, and for the c++ IO, we refer users to the [Cimg](http://cimg.eu/) library. To inspect the pfm format results, you can simply type `python visualize.py .pfm`. 
 
+## Changelog
+
+2019 Feb 28: Use `tf.contrib.image.transform` to implement differentiable homography warping. Depth map reconstruction is now x2 faster!
+
 
 

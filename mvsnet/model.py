@@ -201,7 +201,16 @@ def inference_mem(images, cams, depth_num, depth_start, depth_interval, is_maste
                 """Loop body."""
                 homography = tf.slice(view_homographies[view], begin=[0, d, 0, 0], size=[-1, 1, 3, 3])
                 homography = tf.squeeze(homography, axis=1)
-                warped_view_feature = homography_warping(view_features[view], homography)
+
+                # warped_view_feature = homography_warping(view_features[view], homography)
+                ########## tf.contrib.image.transform #############
+                homography = tf.reshape(homography, [-1, 9])
+                homography_linear = tf.slice(homography, begin=[0, 0], size=[-1, 8])
+                homography_linear_div = tf.tile(tf.slice(homography, begin=[0, 8], size=[-1, 1]), [1, 8])
+                homography_linear = tf.div(homography_linear, homography_linear_div)
+                warped_view_feature = tf.contrib.image.transform(
+                    view_features[view], homography_linear, interpolation='BILINEAR')
+
                 ave_feature = tf.assign_add(ave_feature, warped_view_feature)
                 ave_feature2 = tf.assign_add(ave_feature2, tf.square(warped_view_feature))
                 view = tf.add(view, 1)
