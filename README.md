@@ -40,8 +40,9 @@
 * Download the pre-trained MVSNet model (TBA) and R-MVSNet [model](https://drive.google.com/open?id=1h9oTkepkntUiVvGxE7enmGKvy-GimEED) and upzip the file as ``MODEL_FOLDER``.
 * Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``pretrained_model_ckpt_path`` to ``MODEL_FOLDER/model.ckpt``
 
-* To run MVSNet / R-MVSNet on a GTX1080ti GPU (11GB): 
+* To run MVSNet (GTX1080Ti): 
 ``python test.py --dense_folder /data/dtu/github_data/scan9/  --regularization '3DCNNs' --max_w 1152 --max_h 864 --max_d 192 --interval_scale 1.06``
+* To run R-MVSNet (GTX1080Ti): 
 ``python test.py --dense_folder /data/dtu/github_data/scan9/  --regularization 'GRU' --max_w 1600 --max_h 1200 --max_d 256 --interval_scale 0.8``
 * Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example the depth map and probability map for image `00000012` should look like:
 
