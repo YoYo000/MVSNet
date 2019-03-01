@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Copyright 2018, Yao Yao, HKUST.
+Copyright 2019, Yao Yao, HKUST.
 Training preprocesses.
 """
 
@@ -104,7 +104,7 @@ def mask_depth_image(depth_image, min_depth, max_depth):
     depth_image = np.expand_dims(depth_image, 2)
     return depth_image
 
-def load_cam(file):
+def load_cam(file, interval_scale=1):
     """ read camera txt file """
     cam = np.zeros((2, 4, 4))
     words = file.read().split()
@@ -122,10 +122,24 @@ def load_cam(file):
             
     if len(words) == 29:
         cam[1][3][0] = words[27]
-        cam[1][3][1] = words[28]
+        cam[1][3][1] = float(words[28]) * interval_scale
+        cam[1][3][2] = FLAGS.max_d
+        cam[1][3][3] = cam[1][3][0] + cam[1][3][1] * cam[1][3][2]
+    elif len(words) == 30:
+        cam[1][3][0] = words[27]
+        cam[1][3][1] = float(words[28]) * interval_scale
+        cam[1][3][2] = words[29]
+        cam[1][3][3] = cam[1][3][0] + cam[1][3][1] * cam[1][3][2]
+    elif len(words) == 31:
+        cam[1][3][0] = words[27]
+        cam[1][3][1] = float(words[28]) * interval_scale
+        cam[1][3][2] = words[29]
+        cam[1][3][3] = words[30]
     else:
         cam[1][3][0] = 0
         cam[1][3][1] = 0
+        cam[1][3][2] = 0
+        cam[1][3][3] = 0
 
     return cam
 
@@ -146,7 +160,7 @@ def write_cam(file, cam):
             f.write(str(cam[1][i][j]) + ' ')
         f.write('\n')
 
-    f.write('\n' + str(cam[1][3][0]) + ' ' + str(cam[1][3][1]) + '\n')
+    f.write('\n' + str(cam[1][3][0]) + ' ' + str(cam[1][3][1]) + ' ' + str(cam[1][3][2]) + ' ' + str(cam[1][3][3]) + '\n')
 
     f.close()
 

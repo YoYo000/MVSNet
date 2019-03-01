@@ -37,9 +37,12 @@
 ### Testing
 
 * Download the test data for [scan9](https://drive.google.com/file/d/17ZoojQSubtzQhLCWXjxDLznF2vbKz81E/view?usp=sharing) and unzip it as the ``TEST_DATA_FOLDER`` folder, which should contain one ``cams`` folder, one ``images`` folder and one ``pair.txt`` file.
-* Download the pre-trained MVSNet [model](https://drive.google.com/file/d/1i20LF9q3Pti6YoT1Q-5Li-VNu55SBPQS/view?usp=sharing) and upzip it as ``MODEL_FOLDER``.
+* Download the pre-trained MVSNet model (TBA) and R-MVSNet [model](https://drive.google.com/open?id=1h9oTkepkntUiVvGxE7enmGKvy-GimEED) and upzip the file as ``MODEL_FOLDER``.
 * Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``pretrained_model_ckpt_path`` to ``MODEL_FOLDER/model.ckpt``
-* Test on this dataset ``python test.py --dense_folder TEST_DATA_FOLDER``.
+
+* To run MVSNet / R-MVSNet on a GTX1080ti GPU (11GB): 
+``python test.py --dense_folder /data/dtu/github_data/scan9/  --regularization '3DCNNs' --max_w 1152 --max_h 864 --max_d 192 --interval_scale 1.06``
+``python test.py --dense_folder /data/dtu/github_data/scan9/  --regularization 'GRU' --max_w 1600 --max_h 1200 --max_d 256 --interval_scale 0.8``
 * Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example the depth map and probability map for image `00000012` should look like:
 
 <img src="doc/image.png" width="250">   | <img src="doc/depth_example.png" width="250"> |  <img src="doc/probability_example.png" width="250">
@@ -54,7 +57,8 @@ MVSNet itself only produces per-view depth maps. To generate the 3D point cloud,
 To run the post-processing: 
 * Check out the modified version fusibile ```git clone https://github.com/YoYo000/fusibile```
 * Install fusibile by ```cmake .``` and ```make```, which will generate the executable at ``FUSIBILE_EXE_PATH``
-* Run post-processing ``python depthfusion.py --dense_folder TEST_DATA_FOLDER --fusibile_exe_path FUSIBILE_EXE_PATH``
+* Run post-processing:
+``python depthfusion.py --dense_folder TEST_DATA_FOLDER --fusibile_exe_path FUSIBILE_EXE_PATH``
 * The final point cloud is stored in `TEST_DATA_FOLDER/points_mvsnet/consistencyCheck-TIME/final3d_model.ply`.
 
 We observe that the point cloud output of ``depthfusion.py`` is very similar to our own implementation. For detailed differences, please refer to [MVSNet paper](https://arxiv.org/abs/1804.02505) and [Galliani's paper](https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Galliani_Massively_Parallel_Multiview_ICCV_2015_paper.pdf). The point cloud for `scan9` should look like:
@@ -124,13 +128,21 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 
 ## Todo
 
-* Recurrent MVSNet 
+* Training script for R-MVSNet
+* New MVSNet model (network details have been changed)
 * View selection from Altizure/COLMAP/OpenMVG SfM output 
 * Depth sample selection from Altizure/COLMAP/OpenMVG SfM output 
 
 ## Changelog
 
-2019 Feb 28: Use `tf.contrib.image.transform` to implement differentiable homography warping. Depth map reconstruction is now x2 faster!
+### 2019 Feb 28 
+* Use `tf.contrib.image.transform` for differentiable homography warping. Reconstruction is now x2 faster!
+
+### 2019 March 1 
+* Implement R-MVSNet and GRU regularization
+* Network change: enable scale and center in batch normalization
+* Network change: replace UniNet with 2D UNet 
+* Network change: use group normalization in R-MVSNet
 
 
 

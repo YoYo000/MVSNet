@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Copyright 2018, Yao Yao, HKUST.
+Copyright 2019, Yao Yao, HKUST.
 Model architectures.
 """
 
@@ -11,7 +11,8 @@ import numpy as np
 
 sys.path.append("../")
 from cnn_wrapper.mvsnet import *
-from homography_warping import get_homographies, homography_warping
+from convgru import ConvGRUCell
+from homography_warping import get_homographies, get_homographies_inv_depth, homography_warping
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -67,7 +68,6 @@ def get_propability_map(cv, depth_map, depth_start, depth_interval):
     prob_map = tf.reshape(prob_map, [batch_size, height, width, 1])
 
     return prob_map
-
 
 def inference(images, cams, depth_num, depth_start, depth_interval, is_master_gpu=True):
     """ infer depth image from multi-view images and cameras """
@@ -253,11 +253,145 @@ def inference_mem(images, cams, depth_num, depth_start, depth_interval, is_maste
     # probability map
     prob_map = get_propability_map(probability_volume, estimated_depth_map, depth_start, depth_interval)
 
-    # filtered_depth_map = tf.cast(tf.greater_equal(prob_map, 0.8), dtype='float32') * estimated_depth_map
-
-    # return filtered_depth_map, prob_map
+    # return filtered_depth_map, 
     return estimated_depth_map, prob_map
 
+
+def inference_winner_take_all(images, cams, depth_num, depth_start, depth_end, 
+                              is_master_gpu=True, reg_type='GRU', inverse_depth=False):
+    """ infer disparity image from stereo images and cameras """
+
+    if not inverse_depth:
+        depth_interval = (depth_end - depth_start) / (tf.cast(depth_num, tf.float32) - 1)
+
+    # reference image
+    ref_image = tf.squeeze(tf.slice(images, [0, 0, 0, 0, 0], [-1, 1, -1, -1, 3]), axis=1)
+    ref_cam = tf.squeeze(tf.slice(cams, [0, 0, 0, 0, 0], [-1, 1, 2, 4, 4]), axis=1)
+
+    # image feature extraction    
+    if is_master_gpu:
+        ref_tower = UNetDS2GN({'data': ref_image}, is_training=True, reuse=False)
+    else:
+        ref_tower = UNetDS2GN({'data': ref_image}, is_training=True, reuse=True)
+    view_towers = []
+    for view in range(1, FLAGS.view_num):
+        view_image = tf.squeeze(tf.slice(images, [0, view, 0, 0, 0], [-1, 1, -1, -1, -1]), axis=1)
+        view_tower = UNetDS2GN({'data': view_image}, is_training=True, reuse=True)
+        view_towers.append(view_tower)
+
+    # get all homographies
+    view_homographies = []
+    for view in range(1, FLAGS.view_num):
+        view_cam = tf.squeeze(tf.slice(cams, [0, view, 0, 0, 0], [-1, 1, 2, 4, 4]), axis=1)
+        if inverse_depth:
+            homographies = get_homographies_inv_depth(ref_cam, view_cam, depth_num=depth_num,
+                                depth_start=depth_start, depth_end=depth_end)
+        else:
+            homographies = get_homographies(ref_cam, view_cam, depth_num=depth_num,
+                                            depth_start=depth_start, depth_interval=depth_interval)
+        view_homographies.append(homographies)
+
+    # gru unit
+    gru1_filters = 16
+    gru2_filters = 4
+    gru3_filters = 2
+    feature_shape = [FLAGS.batch_size, FLAGS.max_h/4, FLAGS.max_w/4, 32]
+    gru_input_shape = [feature_shape[1], feature_shape[2]]
+    state1 = tf.zeros([FLAGS.batch_size, feature_shape[1], feature_shape[2], gru1_filters])
+    state2 = tf.zeros([FLAGS.batch_size, feature_shape[1], feature_shape[2], gru2_filters])
+    state3 = tf.zeros([FLAGS.batch_size, feature_shape[1], feature_shape[2], gru3_filters])
+    conv_gru1 = ConvGRUCell(shape=gru_input_shape, kernel=[3, 3], filters=gru1_filters)
+    conv_gru2 = ConvGRUCell(shape=gru_input_shape, kernel=[3, 3], filters=gru2_filters)
+    conv_gru3 = ConvGRUCell(shape=gru_input_shape, kernel=[3, 3], filters=gru3_filters)
+
+    # initialize variables
+    exp_sum = tf.Variable(tf.zeros(
+        [FLAGS.batch_size, feature_shape[1], feature_shape[2], 1]),
+        name='exp_sum', trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+    depth_image = tf.Variable(tf.zeros(
+        [FLAGS.batch_size, feature_shape[1], feature_shape[2], 1]),
+        name='depth_image', trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+    max_prob_image = tf.Variable(tf.zeros(
+        [FLAGS.batch_size, feature_shape[1], feature_shape[2], 1]),
+        name='max_prob_image', trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+    init_map = tf.zeros([FLAGS.batch_size, feature_shape[1], feature_shape[2], 1])
+
+    # define winner take all loop
+    def body(depth_index, state1, state2, state3, depth_image, max_prob_image, exp_sum, incre):
+        """Loop body."""
+
+        # calculate cost 
+        ave_feature = ref_tower.get_output()
+        ave_feature2 = tf.square(ref_tower.get_output())
+        for view in range(0, FLAGS.view_num - 1):
+            homographies = view_homographies[view]
+            homographies = tf.transpose(homographies, perm=[1, 0, 2, 3])
+            homography = homographies[depth_index]
+            homography = tf.reshape(homography, [-1, 9])
+            homography_linear = tf.slice(homography, begin=[0, 0], size=[-1, 8])
+            homography_linear_div = tf.tile(tf.slice(homography, begin=[0, 8], size=[-1, 1]), [1, 8])
+            homography_linear = tf.div(homography_linear, homography_linear_div)
+            warped_view_feature = tf.contrib.image.transform(
+                view_towers[view].get_output(), homography_linear, interpolation='BILINEAR')
+
+            ave_feature = ave_feature + warped_view_feature
+            ave_feature2 = ave_feature2 + tf.square(warped_view_feature)
+        ave_feature = ave_feature / FLAGS.view_num
+        ave_feature2 = ave_feature2 / FLAGS.view_num
+        cost = ave_feature2 - tf.square(ave_feature)
+        cost.set_shape([FLAGS.batch_size, feature_shape[1], feature_shape[2], 32])
+
+        # gru
+        reg_cost1, state1 = conv_gru1(-cost, state1, scope='conv_gru1')
+        reg_cost2, state2 = conv_gru2(reg_cost1, state2, scope='conv_gru2')
+        reg_cost3, state3 = conv_gru3(reg_cost2, state3, scope='conv_gru3')
+        reg_cost = tf.layers.conv2d(
+            reg_cost3, 1, 3, padding='same', reuse=tf.AUTO_REUSE, name='prob_conv')
+        prob = tf.exp(reg_cost)
+
+        # index
+        d_idx = tf.cast(depth_index, tf.float32) 
+        if inverse_depth:
+            inv_depth_start = tf.div(1.0, depth_start)
+            inv_depth_end = tf.div(1.0, depth_end)
+            inv_interval = (inv_depth_start - inv_depth_end) / (tf.cast(depth_num, 'float32') - 1)
+            inv_depth = inv_depth_start - d_idx * inv_interval
+            depth = tf.div(1.0, inv_depth)
+        else:
+            depth = depth_start + d_idx * depth_interval
+        temp_depth_image = tf.reshape(depth, [FLAGS.batch_size, 1, 1, 1])
+        temp_depth_image = tf.tile(
+            temp_depth_image, [1, feature_shape[1], feature_shape[2], 1])
+
+        # update the best
+        update_flag_image = tf.cast(tf.less(max_prob_image, prob), dtype='float32')
+        new_max_prob_image = update_flag_image * prob + (1 - update_flag_image) * max_prob_image
+        new_depth_image = update_flag_image * temp_depth_image + (1 - update_flag_image) * depth_image
+        max_prob_image = tf.assign(max_prob_image, new_max_prob_image)
+        depth_image = tf.assign(depth_image, new_depth_image)
+
+        # update counter
+        exp_sum = tf.assign_add(exp_sum, prob)
+        depth_index = tf.add(depth_index, incre)
+
+        return depth_index, state1, state2, state3, depth_image, max_prob_image, exp_sum, incre
+    
+    # run forward loop
+    exp_sum = tf.assign(exp_sum, init_map)
+    depth_image = tf.assign(depth_image, init_map)
+    max_prob_image = tf.assign(max_prob_image, init_map)
+    depth_index = tf.constant(0)
+    incre = tf.constant(1)
+    cond = lambda depth_index, *_: tf.less(depth_index, depth_num)
+    _, state1, state2, state3, depth_image, max_prob_image, exp_sum, incre = tf.while_loop(
+        cond, body
+        , [depth_index, state1, state2, state3, depth_image, max_prob_image, exp_sum, incre]
+        , back_prop=False, parallel_iterations=1)
+
+    # get output
+    forward_exp_sum = exp_sum + 1e-7
+    forward_depth_map = depth_image
+    return forward_depth_map, max_prob_image / forward_exp_sum
 
 def depth_refine(init_depth_map, image, depth_num, depth_start, depth_interval, is_master_gpu=True):
     """ refine depth image with the image """
