@@ -200,4 +200,49 @@ def homography_warping(input_image, homography):
 
     # return input_image
     return warped_image
+def tf_transform_homography(input_image, homography):
+
+	# tf.contrib.image.transform is for pixel coordinate but our
+	# homograph parameters are for image coordinate (x_p = x_i + 0.5).
+	# So need to change the corresponding homography parameters 
+    homography = tf.reshape(homography, [-1, 9])
+    a0 = tf.slice(homography, [0, 0], [-1, 1])
+    a1 = tf.slice(homography, [0, 1], [-1, 1])
+    a2 = tf.slice(homography, [0, 2], [-1, 1])
+    b0 = tf.slice(homography, [0, 3], [-1, 1])
+    b1 = tf.slice(homography, [0, 4], [-1, 1])
+    b2 = tf.slice(homography, [0, 5], [-1, 1])
+    c0 = tf.slice(homography, [0, 6], [-1, 1])
+    c1 = tf.slice(homography, [0, 7], [-1, 1])
+    c2 = tf.slice(homography, [0, 8], [-1, 1])
+    a_0 = a0 - c0 / 2
+    a_1 = a1 - c1 / 2
+    a_2 = (a0 + a1) / 2 + a2 - (c0 + c1) / 4 - c2 / 2
+    b_0 = b0 - c0 / 2
+    b_1 = b1 - c1 / 2
+    b_2 = (b0 + b1) / 2 + b2 - (c0 + c1) / 4 - c2 / 2
+    c_0 = c0
+    c_1 = c1
+    c_2 = c2 + (c0 + c1) / 2
+    homo = []
+    homo.append(a_0)
+    homo.append(a_1)
+    homo.append(a_2)
+    homo.append(b_0)
+    homo.append(b_1)
+    homo.append(b_2)
+    homo.append(c_0)
+    homo.append(c_1)
+    homo.append(c_2)
+    homography = tf.stack(homo, axis=1)
+    homography = tf.reshape(homography, [-1, 9])
+
+    homography_linear = tf.slice(homography, begin=[0, 0], size=[-1, 8])
+    homography_linear_div = tf.tile(tf.slice(homography, begin=[0, 8], size=[-1, 1]), [1, 8])
+    homography_linear = tf.div(homography_linear, homography_linear_div)
+    warped_image = tf.contrib.image.transform(
+        input_image, homography_linear, interpolation='BILINEAR')
+
+    # return input_image
+    return warped_image
 

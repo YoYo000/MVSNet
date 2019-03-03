@@ -12,7 +12,7 @@ import numpy as np
 sys.path.append("../")
 from cnn_wrapper.mvsnet import *
 from convgru import ConvGRUCell
-from homography_warping import get_homographies, get_homographies_inv_depth, homography_warping
+from homography_warping import *
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -108,7 +108,8 @@ def inference(images, cams, depth_num, depth_start, depth_interval, is_master_gp
             for view in range(0, FLAGS.view_num - 1):
                 homography = tf.slice(view_homographies[view], begin=[0, d, 0, 0], size=[-1, 1, 3, 3])
                 homography = tf.squeeze(homography, axis=1)
-                warped_view_feature = homography_warping(view_towers[view].get_output(), homography)
+				# warped_view_feature = homography_warping(view_towers[view].get_output(), homography)
+                warped_view_feature = tf_transform_homography(view_towers[view].get_output(), homography)
                 ave_feature = ave_feature + warped_view_feature
                 ave_feature2 = ave_feature2 + tf.square(warped_view_feature)
             ave_feature = ave_feature / FLAGS.view_num
@@ -201,16 +202,8 @@ def inference_mem(images, cams, depth_num, depth_start, depth_interval, is_maste
                 """Loop body."""
                 homography = tf.slice(view_homographies[view], begin=[0, d, 0, 0], size=[-1, 1, 3, 3])
                 homography = tf.squeeze(homography, axis=1)
-
                 # warped_view_feature = homography_warping(view_features[view], homography)
-                ########## tf.contrib.image.transform #############
-                homography = tf.reshape(homography, [-1, 9])
-                homography_linear = tf.slice(homography, begin=[0, 0], size=[-1, 8])
-                homography_linear_div = tf.tile(tf.slice(homography, begin=[0, 8], size=[-1, 1]), [1, 8])
-                homography_linear = tf.div(homography_linear, homography_linear_div)
-                warped_view_feature = tf.contrib.image.transform(
-                    view_features[view], homography_linear, interpolation='BILINEAR')
-
+                warped_view_feature = tf_transform_homography(view_features[view], homography)
                 ave_feature = tf.assign_add(ave_feature, warped_view_feature)
                 ave_feature2 = tf.assign_add(ave_feature2, tf.square(warped_view_feature))
                 view = tf.add(view, 1)
@@ -327,13 +320,8 @@ def inference_winner_take_all(images, cams, depth_num, depth_start, depth_end,
             homographies = view_homographies[view]
             homographies = tf.transpose(homographies, perm=[1, 0, 2, 3])
             homography = homographies[depth_index]
-            homography = tf.reshape(homography, [-1, 9])
-            homography_linear = tf.slice(homography, begin=[0, 0], size=[-1, 8])
-            homography_linear_div = tf.tile(tf.slice(homography, begin=[0, 8], size=[-1, 1]), [1, 8])
-            homography_linear = tf.div(homography_linear, homography_linear_div)
-            warped_view_feature = tf.contrib.image.transform(
-                view_towers[view].get_output(), homography_linear, interpolation='BILINEAR')
-
+            # warped_view_feature = homography_warping(view_towers[view].get_output(), homography)
+            warped_view_feature = tf_transform_homography(view_towers[view].get_output(), homography)
             ave_feature = ave_feature + warped_view_feature
             ave_feature2 = ave_feature2 + tf.square(warped_view_feature)
         ave_feature = ave_feature / FLAGS.view_num
