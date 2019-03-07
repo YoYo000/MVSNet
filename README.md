@@ -37,7 +37,7 @@
 ### Testing
 
 * Download the test data for [scan9](https://drive.google.com/file/d/17ZoojQSubtzQhLCWXjxDLznF2vbKz81E/view?usp=sharing) and unzip it as the ``TEST_DATA_FOLDER`` folder, which should contain one ``cams`` folder, one ``images`` folder and one ``pair.txt`` file.
-* Download the pre-trained MVSNet model and R-MVSNet [model](https://drive.google.com/file/d/1h40Rq8ou5XLGFFSXTFBvrLla7-RMz73n/view) and upzip the file as ``MODEL_FOLDER``.
+* Download the pre-trained MVSNet and R-MVSNets [model](https://drive.google.com/file/d/1h40Rq8ou5XLGFFSXTFBvrLla7-RMz73n/view) and upzip the file as ``MODEL_FOLDER``.
 * Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``pretrained_model_ckpt_path`` to ``MODEL_FOLDER/model.ckpt``
 
 * To run MVSNet (GTX1080Ti): 
@@ -129,8 +129,7 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 
 ## Todo
 
-* Training script for R-MVSNet
-* New MVSNet model (network details have been changed)
+* Validation script
 * View selection from Altizure/COLMAP/OpenMVG SfM output 
 * Depth sample selection from Altizure/COLMAP/OpenMVG SfM output 
 
