@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Copyright 2018, Yao Yao, HKUST.
-convert MVSNet output to Gipuma format for post-processing.
+Copyright 2019, Yao Yao, HKUST.
+Convert MVSNet output to Gipuma format for post-processing.
 """
 
 from __future__ import print_function

@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+"""
+Copyright 2019, Yao Yao, HKUST.
+Depth map visualization.
+"""
+
 import numpy as np
 import cv2
 import argparse

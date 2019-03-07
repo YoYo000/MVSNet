@@ -37,7 +37,7 @@
 ### Testing
 
 * Download the test data for [scan9](https://drive.google.com/file/d/17ZoojQSubtzQhLCWXjxDLznF2vbKz81E/view?usp=sharing) and unzip it as the ``TEST_DATA_FOLDER`` folder, which should contain one ``cams`` folder, one ``images`` folder and one ``pair.txt`` file.
-* Download the pre-trained MVSNet model (TBA) and R-MVSNet [model](https://drive.google.com/open?id=1h9oTkepkntUiVvGxE7enmGKvy-GimEED) and upzip the file as ``MODEL_FOLDER``.
+* Download the pre-trained MVSNet model and R-MVSNet [model](https://drive.google.com/file/d/1h40Rq8ou5XLGFFSXTFBvrLla7-RMz73n/view) and upzip the file as ``MODEL_FOLDER``.
 * Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``pretrained_model_ckpt_path`` to ``MODEL_FOLDER/model.ckpt``
 
 * To run MVSNet (GTX1080Ti): 
@@ -58,7 +58,7 @@ MVSNet itself only produces per-view depth maps. To generate the 3D point cloud,
 To run the post-processing: 
 * Check out the modified version fusibile ```git clone https://github.com/YoYo000/fusibile```
 * Install fusibile by ```cmake .``` and ```make```, which will generate the executable at ``FUSIBILE_EXE_PATH``
-* Run post-processing:
+* Run post-processing (--prob_threshold 0.8 if using 3DCNNs):
 ``python depthfusion.py --dense_folder TEST_DATA_FOLDER --fusibile_exe_path FUSIBILE_EXE_PATH --prob_threshold 0.3``
 * The final point cloud is stored in `TEST_DATA_FOLDER/points_mvsnet/consistencyCheck-TIME/final3d_model.ply`.
 
@@ -144,6 +144,10 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 * Network change: enable scale and center in batch normalization
 * Network change: replace UniNet with 2D UNet 
 * Network change: use group normalization in R-MVSNet
+
+### 2019 March 7
+* MVSNet / R-MVSNet and training / testing scripts
+* MVSNet and R-MVSNet models (trained for 100000 iterations)
 
 
 

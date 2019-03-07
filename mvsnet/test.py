@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Copyright 2019, Yao Yao, HKUST.
-Training script.
+Test script.
 """
 
 from __future__ import print_function
@@ -20,42 +20,43 @@ sys.path.append("../")
 from tools.common import Notify
 from preprocess import *
 from model import *
+from loss import *
 
-# params for datasets
+# dataset parameters
 tf.app.flags.DEFINE_string('dense_folder', None, 
                            """Root path to dense folder.""")
-# params for input
+tf.app.flags.DEFINE_string('model_dir', 
+                           '/data/tf_model',
+                           """Path to restore the model.""")
+tf.app.flags.DEFINE_integer('ckpt_step', 100000,
+                            """ckpt step.""")
+
+# input parameters
 tf.app.flags.DEFINE_integer('view_num', 5,
                             """Number of images (1 ref image and view_num - 1 view images).""")
-tf.app.flags.DEFINE_integer('default_depth_start', 1,
-                            """Start depth when training.""")
-tf.app.flags.DEFINE_integer('default_depth_interval', 1, 
-                            """Depth interval when training.""")
 tf.app.flags.DEFINE_integer('max_d', 256, 
-                            """Maximum depth step when training.""")
+                            """Maximum depth step when testing.""")
 tf.app.flags.DEFINE_integer('max_w', 1600, 
-                            """Maximum image width when training.""")
+                            """Maximum image width when testing.""")
 tf.app.flags.DEFINE_integer('max_h', 1200, 
-                            """Maximum image height when training.""")
+                            """Maximum image height when testing.""")
 tf.app.flags.DEFINE_float('sample_scale', 0.25, 
                             """Downsample scale for building cost volume (W and H).""")
 tf.app.flags.DEFINE_float('interval_scale', 0.8, 
                             """Downsample scale for building cost volume (D).""")
-tf.app.flags.DEFINE_integer('base_image_size', 8, 
-                            """Base image size to fit the network.""")
+tf.app.flags.DEFINE_float('base_image_size', 8, 
+                            """Base image size""")
 tf.app.flags.DEFINE_integer('batch_size', 1, 
-                            """training batch size""")
-tf.app.flags.DEFINE_bool('inverse_depth', True,
-                           """Apply inverse depth.""")
-tf.app.flags.DEFINE_string('regularization', 'GRU',
-                           """Apply inverse depth.""")
+                            """testing batch size.""")
 
-# params for config
-tf.app.flags.DEFINE_string('pretrained_model_ckpt_path', 
-                           '/data/dtu/tf_model/mvsnet_arxiv/model.ckpt',
-                           """Path to restore the model.""")
-tf.app.flags.DEFINE_integer('ckpt_step', 80000,
-                            """ckpt step.""")
+# network architecture
+tf.app.flags.DEFINE_string('regularization', 'GRU',
+                           """Regularization method""")
+tf.app.flags.DEFINE_boolean('refinement', False,
+                           """Whether to apply depth map refinement for MVSNet""")
+tf.app.flags.DEFINE_bool('inverse_depth', True,
+                           """Whether to apply inverse depth for R-MVSNet""")
+
 FLAGS = tf.app.flags.FLAGS
 
 class MVSGenerator:
@@ -164,24 +165,31 @@ def mvsnet_pipeline(mvs_list):
         tf.reshape(tf.slice(scaled_cams, [0, 0, 1, 3, 2], [1, 1, 1, 1, 1]), []), 'int32')
 
     # deal with inverse depth
-    if FLAGS.inverse_depth:
+    if FLAGS.regularization == '3DCNNs' and FLAGS.inverse_depth:
         depth_end = tf.reshape(
             tf.slice(scaled_cams, [0, 0, 1, 3, 3], [FLAGS.batch_size, 1, 1, 1, 1]), [FLAGS.batch_size])
     else:
         depth_end = depth_start + (tf.cast(depth_num, tf.float32) - 1) * depth_interval
 
+    # depth map inference using 3DCNNs
     if FLAGS.regularization == '3DCNNs':
-        # depth map inference
         init_depth_map, prob_map = inference_mem(
             centered_images, scaled_cams, FLAGS.max_d, depth_start, depth_interval)
+
+        if FLAGS.refinement:
+            ref_image = tf.squeeze(tf.slice(centered_images, [0, 0, 0, 0, 0], [-1, 1, -1, -1, 3]), axis=1)
+            refined_depth_map = depth_refine(
+                init_depth_map, ref_image, FLAGS.max_d, depth_start, depth_interval, True)
+
+    # depth map inference using GRU
     elif FLAGS.regularization == 'GRU':
-        # depth map inference
         init_depth_map, prob_map = inference_winner_take_all(centered_images, scaled_cams, 
             depth_num, depth_start, depth_end, reg_type='GRU', inverse_depth=FLAGS.inverse_depth)
 
     # init option
     init_op = tf.global_variables_initializer()
     var_init_op = tf.local_variables_initializer()
+
     # GPU grows incrementally
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -194,12 +202,12 @@ def mvsnet_pipeline(mvs_list):
         total_step = 0
 
         # load model
-        if FLAGS.pretrained_model_ckpt_path is not None:
+        if FLAGS.model_dir is not None:
+            pretrained_model_ckpt_path = os.path.join(FLAGS.model_dir, FLAGS.regularization, 'model.ckpt') 
             restorer = tf.train.Saver(tf.global_variables())
-            restorer.restore(
-                sess, '-'.join([FLAGS.pretrained_model_ckpt_path, str(FLAGS.ckpt_step)]))
+            restorer.restore(sess, '-'.join([pretrained_model_ckpt_path, str(FLAGS.ckpt_step)]))
             print(Notify.INFO, 'Pre-trained model restored from %s' %
-                  ('-'.join([FLAGS.pretrained_model_ckpt_path, str(FLAGS.ckpt_step)])), Notify.ENDC)
+                  ('-'.join([pretrained_model_ckpt_path, str(FLAGS.ckpt_step)])), Notify.ENDC)
             total_step = FLAGS.ckpt_step
     
         # run inference for each reference view

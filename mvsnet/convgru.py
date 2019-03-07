@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Copyright 2019, Yao Yao, HKUST.
-Training script.
+Convolutional GRU module.
 """
 
 import tensorflow as tf
@@ -91,7 +91,7 @@ class ConvGRUCell(tf.contrib.rnn.RNNCell):
                     inputs, 2 * self._filters, self._kernel, padding='same', name='conv')
                 reset_gate, update_gate = tf.split(conv, 2, axis=self._feature_axis)
 
-                # group normalization
+                # group normalization, actually is 'instance normalization' as to save GPU memory 
                 reset_gate = group_norm(reset_gate, 'reset_norm', group_channel=16)
                 update_gate = group_norm(update_gate, 'update_norm', group_channel=16)
 
