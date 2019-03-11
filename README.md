@@ -29,22 +29,24 @@
 
 ### Training
 
-* Download the preprocessed [DTU training data](https://drive.google.com/file/d/1eDjh-_bxKKnEuz5h-HXS7EDJn59clx6V/view) (Fixed training cameras, Sep. 19), and upzip it as the ``MVS_TRANING`` folder.
-* Enter the ``MVSNet/mvsnet`` folder, in ``train.py``, set ``dtu_data_root`` to your ``MVS_TRANING`` path.
-* Create a log folder and a model folder in wherever you like to save the training outputs. Set the ``log_dir`` and ``save_dir`` in ``train.py`` correspondingly.
-* Train the network ``python train.py``
+* Download the preprocessed [DTU training data](https://drive.google.com/file/d/1eDjh-_bxKKnEuz5h-HXS7EDJn59clx6V/view) (Fixed training cameras, Sep. 19), and upzip it as the ``MVS_TRANING`` folder
+* Enter the ``MVSNet/mvsnet`` folder, in ``train.py``, set ``dtu_data_root`` to your ``MVS_TRANING`` path
+* Create a log folder and a model folder in wherever you like to save the training outputs. Set the ``log_dir`` and ``save_dir`` in ``train.py`` correspondingly
+* Train MVSNet (GTX1080Ti): 
+``python train.py --regularization 'GRU'`` 
+* Train R-MVSNet (GTX1080Ti):
+``python train.py --regularization '3DCNNs'``
 
 ### Testing
 
-* Download the test data for [scan9](https://drive.google.com/file/d/17ZoojQSubtzQhLCWXjxDLznF2vbKz81E/view?usp=sharing) and unzip it as the ``TEST_DATA_FOLDER`` folder, which should contain one ``cams`` folder, one ``images`` folder and one ``pair.txt`` file.
-* Download the pre-trained MVSNet and R-MVSNets [model](https://drive.google.com/file/d/1h40Rq8ou5XLGFFSXTFBvrLla7-RMz73n/view) and upzip the file as ``MODEL_FOLDER``.
-* Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``pretrained_model_ckpt_path`` to ``MODEL_FOLDER/model.ckpt``
-
-* To run MVSNet (GTX1080Ti): 
+* Download the test data for [scan9](https://drive.google.com/file/d/17ZoojQSubtzQhLCWXjxDLznF2vbKz81E/view?usp=sharing) and unzip it as the ``TEST_DATA_FOLDER`` folder, which should contain one ``cams`` folder, one ``images`` folder and one ``pair.txt`` file
+* Download the pre-trained MVSNet and R-MVSNet [models](https://drive.google.com/file/d/1h40Rq8ou5XLGFFSXTFBvrLla7-RMz73n/view) and upzip the file as ``MODEL_FOLDER``
+* Enter the ``MVSNet/mvsnet`` folder, in ``test.py``, set ``model_dir`` to ``MODEL_FOLDER``
+* Run MVSNet (GTX1080Ti): 
 ``python test.py --dense_folder TEST_DATA_FOLDER  --regularization '3DCNNs' --max_w 1152 --max_h 864 --max_d 192 --interval_scale 1.06``
-* To run R-MVSNet (GTX1080Ti): 
+* Run R-MVSNet (GTX1080Ti): 
 ``python test.py --dense_folder TEST_DATA_FOLDER  --regularization 'GRU' --max_w 1600 --max_h 1200 --max_d 256 --interval_scale 0.8``
-* Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example the depth map and probability map for image `00000012` should look like:
+* Inspect the .pfm format outputs in ``TEST_DATA_FOLDER/depths_mvsnet`` using ``python visualize.py .pfm``. For example the depth map and probability map for image `00000012` should be something like:
 
 <img src="doc/image.png" width="250">   | <img src="doc/depth_example.png" width="250"> |  <img src="doc/probability_example.png" width="250">
 :---------------------------------------:|:---------------------------------------:|:---------------------------------------:
@@ -53,7 +55,7 @@ reference image                          |depth map                             
 
 ### Post-Processing
 
-MVSNet itself only produces per-view depth maps. To generate the 3D point cloud, we need to apply depth map filter/fusion for post-processing. As our implementation of this part is depended on the [Altizure](https://www.altizure.com/) internal library, currently we could not provide the corresponding code. Fortunately, depth map filter/fusion is a general step in MVS reconstruction, and there are similar implementations in other open-source MVS algorithms. We provide the script ``depthfusion.py`` to utilize [fusibile](https://github.com/kysucix/fusibile) for post-processing (thank Silvano Galliani for the excellent code!). 
+R/MVSNet itself only produces per-view depth maps. To generate the 3D point cloud, we need to apply depth map filter/fusion for post-processing. As our implementation of this part is depended on the [Altizure](https://www.altizure.com/) internal library, currently we could not provide the corresponding code. Fortunately, depth map filter/fusion is a general step in MVS reconstruction, and there are similar implementations in other open-source MVS algorithms. We provide the script ``depthfusion.py`` to utilize [fusibile](https://github.com/kysucix/fusibile) for post-processing (thank Silvano Galliani for the excellent code!). 
 
 To run the post-processing: 
 * Check out the modified version fusibile ```git clone https://github.com/YoYo000/fusibile```
@@ -69,6 +71,15 @@ We observe that the point cloud output of ``depthfusion.py`` is very similar to 
 :--------------------------------------------------:|:----------------------------------------------:
 point cloud result                          |ground truth point cloud
 
+
+### Reproduce Benchmarking Results
+
+The following steps are required to reproduce the point cloud results:
+
+* Generate R/MVSNet inputs from the SfM outputs, you can use our preprocessed inputs for [DTU](https://drive.google.com/open?id=135oKPefcPTsdtLRzoDAQtPpHuoIrpRI_), [Tanks and Temples](https://drive.google.com/open?id=1YArOJaX9WVLJh4757uE8AEREYkgszrCo) and [ETH3D](https://drive.google.com/open?id=1hGft7rEFnoSrnTjY_N6vp5j1QBsGcnBB) datasets (provided)
+* Run R/MVSNet test script to generate depth maps for all views (provided)
+* Apply variational depth map refinement for all views (optional, not provided)
+* Apply depth map filter and fusion to generate the point cloud results (partially provided via fusibile)
 
 
 ## File Formats
@@ -86,7 +97,7 @@ Each project folder should contain the following
 │   └── ...                
 └── pair.txt               
 ```
-If you want to apply MVSNet to your own data, please structure your data into such a folder.
+If you want to apply R/MVSNet to your own data, please structure your data into such a folder.
 
 ### Image Files
 All image files are stored in the `images` folder. We index each image using an 8 digit number starting from `00000000`. The following camera and output files use the same indexes as well. 
@@ -147,6 +158,10 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 ### 2019 March 7
 * MVSNet / R-MVSNet and training / testing scripts
 * MVSNet and R-MVSNet models (trained for 100000 iterations)
+
+### 2019 March 11
+* Add "Reproduce Benchmarking Results" section
+
 
 
 

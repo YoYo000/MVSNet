@@ -328,7 +328,10 @@ def train(traning_list):
                    
                     # save the model checkpoint periodically
                     if (total_step % FLAGS.snapshot == 0 or step == (training_sample_size - 1)):
-                        ckpt_path = os.path.join(FLAGS.model_dir, FLAGS.regularization, 'model.ckpt')
+                        model_folder = os.path.join(FLAGS.model_dir, FLAGS.regularization)
+                        if not os.path.exists(model_folder):
+                            os.mkdir(model_folder)
+                        ckpt_path = os.path.join(model_folder, 'model.ckpt')
                         print(Notify.INFO, 'Saving model to %s' % ckpt_path, Notify.ENDC)
                         saver.save(sess, ckpt_path, global_step=total_step)
                     step += FLAGS.batch_size * FLAGS.num_gpus
