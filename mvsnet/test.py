@@ -47,11 +47,13 @@ tf.app.flags.DEFINE_float('interval_scale', 0.8,
 tf.app.flags.DEFINE_float('base_image_size', 8, 
                             """Base image size""")
 tf.app.flags.DEFINE_integer('batch_size', 1, 
-                            """testing batch size.""")
+                            """Testing batch size.""")
+tf.app.flags.DEFINE_bool('adaptive_scaling', True, 
+                            """Let image size to fit the network, including 'scaling', 'cropping'""")
 
 # network architecture
 tf.app.flags.DEFINE_string('regularization', 'GRU',
-                           """Regularization method""")
+                           """Regularization method, including '3DCNNs' and 'GRU'""")
 tf.app.flags.DEFINE_boolean('refinement', False,
                            """Whether to apply depth map refinement for MVSNet""")
 tf.app.flags.DEFINE_bool('inverse_depth', True,
@@ -100,14 +102,23 @@ class MVSGenerator:
                 print ('range: ', cams[0][1, 3, 0], cams[0][1, 3, 1], cams[0][1, 3, 2], cams[0][1, 3, 3])
 
                 # determine a proper scale to resize input 
-                h_scale = float(FLAGS.max_h) / images[0].shape[0]
-                w_scale = float(FLAGS.max_w) / images[0].shape[1]
-                if h_scale > 1 or w_scale > 1:
-                    print ("max_h, max_w should < W and H!")
-                    exit()
-                resize_scale = h_scale
-                if w_scale > h_scale:
-                    resize_scale = w_scale
+                resize_scale = 1
+                if FLAGS.adaptive_scaling:
+                    h_scale = 0
+                    w_scale = 0
+                    for view in range(self.view_num):
+                        height_scale = float(FLAGS.max_h) / images[view].shape[0]
+                        width_scale = float(FLAGS.max_w) / images[view].shape[1]
+                        if height_scale > h_scale:
+                            h_scale = height_scale
+                        if width_scale > w_scale:
+                            w_scale = width_scale
+                    if h_scale > 1 or w_scale > 1:
+                        print ("max_h, max_w should < W and H!")
+                        exit(-1)
+                    resize_scale = h_scale
+                    if w_scale > h_scale:
+                        resize_scale = w_scale
                 scaled_input_images, scaled_input_cams = scale_mvs_input(images, cams, scale=resize_scale)
 
                 # crop to fit network
