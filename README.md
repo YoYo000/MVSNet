@@ -81,6 +81,7 @@ The following steps are required to reproduce the point cloud results:
 * Apply variational depth map refinement for all views (optional, not provided)
 * Apply depth map filter and fusion to generate the point cloud results (partially provided via fusibile)
 
+R-MVSNet point cloud results with full post-processing are also provided: [DTU evaluation point clouds](https://drive.google.com/open?id=1L0sQjIVYu2hYjwpwbWSN8k42QhkQDjbQ) 
 
 ## File Formats
 
@@ -116,9 +117,9 @@ K00 K01 K02
 K10 K11 K12
 K20 K21 K22
 
-DEPTH_MIN DEPTH_INTERVAL
+DEPTH_MIN DEPTH_INTERVAL (DEPTH_NUM DEPTH_MAX) 
 ```
-Note that the depth range and depth resolution are determined by the minimum depth `DEPTH_MIN`, the interval between two depth samples `DEPTH_INTERVAL`, and also the depth sample number (`max_d` in the training/testing scripts). The `max_d` is left in the scripts for users to flexibly control the depth range. We also left the `interval_scale` for controlling the depth resolution. The maximum depth is then computed as:
+Note that the depth range and depth resolution are determined by the minimum depth `DEPTH_MIN`, the interval between two depth samples `DEPTH_INTERVAL`, and also the depth sample number `DEPTH_NUM` (or `max_d` in the training/testing scripts if `DEPTH_NUM` is not provided). We also left the `interval_scale` for controlling the depth resolution. The maximum depth is then computed as:
 ```
 DEPTH_MAX = DEPTH_MIN + (interval_scale * DEPTH_INTERVAL) * (max_d - 1)
 ``` 
@@ -161,6 +162,9 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 
 ### 2019 March 11
 * Add "Reproduce Benchmarking Results" section
+
+### 2019 March 14
+* Add R-MVSNet point clouds of DTU evaluation set
 
 
 
