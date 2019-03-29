@@ -229,9 +229,9 @@ def train(traning_list):
                             refined_depth_map = depth_map
 
                         # regression loss
-                        loss0, less_one_temp, less_three_temp = mvsnet_loss(
+                        loss0, less_one_temp, less_three_temp = mvsnet_regression_loss(
                             depth_map, depth_image, depth_interval)
-                        loss1, less_one_accuracy, less_three_accuracy = mvsnet_loss(
+                        loss1, less_one_accuracy, less_three_accuracy = mvsnet_regression_loss(
                             refined_depth_map, depth_image, depth_interval)
                         loss = (loss0 + loss1) / 2
 
