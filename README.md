@@ -29,7 +29,7 @@
 
 ### Training
 
-* Download the preprocessed [DTU training data](https://drive.google.com/file/d/1eDjh-_bxKKnEuz5h-HXS7EDJn59clx6V/view) (Fixed training cameras, Sep. 19), and upzip it as the ``MVS_TRANING`` folder
+* Download the preprocessed [DTU training data](https://drive.google.com/file/d/1eDjh-_bxKKnEuz5h-HXS7EDJn59clx6V/view) (also available at [Baiduyun](https://pan.baidu.com/s/1Wb9E6BWCJu4wZfwxm_t4TQ#list/path=%2F), code: s2v2), and upzip it as the ``MVS_TRANING`` folder
 * Enter the ``MVSNet/mvsnet`` folder, in ``train.py``, set ``dtu_data_root`` to your ``MVS_TRANING`` path
 * Create a log folder and a model folder in wherever you like to save the training outputs. Set the ``log_dir`` and ``save_dir`` in ``train.py`` correspondingly
 * Train MVSNet (GTX1080Ti): 
@@ -166,6 +166,8 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 ### 2019 March 14
 * Add R-MVSNet point clouds of DTU evaluation set
 
+### 2019 April 10
+* Add [Baiduyun](https://pan.baidu.com/s/1Wb9E6BWCJu4wZfwxm_t4TQ#list/path=%2F) (code: s2v2) link for mainland China users
 
 
 
