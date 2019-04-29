@@ -83,6 +83,10 @@ The following steps are required to reproduce the point cloud results:
 
 R-MVSNet point cloud results with full post-processing are also provided: [DTU evaluation point clouds](https://drive.google.com/open?id=1L0sQjIVYu2hYjwpwbWSN8k42QhkQDjbQ) 
 
+
+
+
+
 ## File Formats
 
 Each project folder should contain the following
@@ -98,7 +102,7 @@ Each project folder should contain the following
 │   └── ...                
 └── pair.txt               
 ```
-If you want to apply R/MVSNet to your own data, please structure your data into such a folder.
+If you want to apply R/MVSNet to your own data, please structure your data into such a folder. We also provide a script `colmap2mvsnet.py` to convert COLMAP SfM result to R/MVSNet input.
 
 ### Image Files
 All image files are stored in the `images` folder. We index each image using an 8 digit number starting from `00000000`. The following camera and output files use the same indexes as well. 
@@ -135,6 +139,13 @@ IMAGE_ID1                       # index of reference image 1
 ...
 ``` 
 
+### MVSNet input from COLMAP SfM
+We provide a script to convert COLMAP SfM result to R/MVSNet input. After recovering SfM result and undistorting all images, COLMAP should generate a dense folder `COLMAP/dense/` containing an undistorted image folder `COLMAP/dense/images/` and a undistorted camera folder `COLMAP/dense/sparse/`. Then, you can use the following command to generate the R/MVSNet input:
+
+``python colmap2mvsnet.py --dense_folder COLMAP/dense``
+
+The depth sample number will be automatically computed using the inverse depth setting. If you want to generate the MVSNet input with a fixed depth sample number (e.g., 256), you could specified the depth number via `--max_d 256`.
+
 
 ### Output Format
 The ``test.py`` script will create a `depths_mvsnet` folder to store the running results, including the depth maps, probability maps, scaled/cropped images and the corresponding cameras. The depth and probability maps are stored in `.pfm` format. We provide the python IO for pfm files in the `preprocess.py` script, and for the c++ IO, we refer users to the [Cimg](http://cimg.eu/) library. To inspect the pfm format results, you can simply type `python visualize.py .pfm`. 
@@ -142,8 +153,6 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 ## Todo
 
 * Validation script
-* View selection from Altizure/COLMAP/OpenMVG SfM output 
-* Depth sample selection from Altizure/COLMAP/OpenMVG SfM output 
 
 ## Changelog
 
@@ -169,5 +178,6 @@ The ``test.py`` script will create a `depths_mvsnet` folder to store the running
 ### 2019 April 10
 * Add [Baiduyun](https://pan.baidu.com/s/1Wb9E6BWCJu4wZfwxm_t4TQ#list/path=%2F) (code: s2v2) link for mainland China users
 
-
+### 2019 April 29
+* Add `colmap2mvsnet.py` script to convert COLMAP SfM result to MVSNet input, including depth range estimation and view selection
 
