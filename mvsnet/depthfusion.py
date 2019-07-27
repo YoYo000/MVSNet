@@ -92,7 +92,7 @@ def mvsnet_to_gipuma_cam(in_path, out_path):
 
     return
 
-def fake_colmap_normal(in_depth_path, out_normal_path):
+def fake_gipuma_normal(in_depth_path, out_normal_path):
     
     depth_image = read_gipuma_dmb(in_depth_path)
     image_shape = np.shape(depth_image)
@@ -155,8 +155,7 @@ def mvsnet_to_gipuma(dense_folder, gipuma_point_folder):
         out_depth_dmb = os.path.join(sub_depth_folder, 'disp.dmb')
         fake_normal_dmb = os.path.join(sub_depth_folder, 'normals.dmb')
         mvsnet_to_gipuma_dmb(in_depth_pfm, out_depth_dmb)
-        fake_colmap_normal(out_depth_dmb, fake_normal_dmb)
-
+        fake_gipuma_normal(out_depth_dmb, fake_normal_dmb)
 
 def probability_filter(dense_folder, prob_threshold):
     image_folder = os.path.join(dense_folder, 'images')
@@ -175,7 +174,6 @@ def probability_filter(dense_folder, prob_threshold):
         prob_map = load_pfm(open(prob_map_path))
         depth_map[prob_map < prob_threshold] = 0
         write_pfm(out_depth_map_path, depth_map)
-
 
 def depth_map_fusion(point_folder, fusibile_exe_path, disp_thresh, num_consistent):
 

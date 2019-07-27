@@ -33,9 +33,9 @@
 * Enter the ``MVSNet/mvsnet`` folder, in ``train.py``, set ``dtu_data_root`` to your ``MVS_TRANING`` path
 * Create a log folder and a model folder in wherever you like to save the training outputs. Set the ``log_dir`` and ``save_dir`` in ``train.py`` correspondingly
 * Train MVSNet (GTX1080Ti): 
-``python train.py --regularization 'GRU'`` 
+``python train.py --regularization '3DCNNs'`` 
 * Train R-MVSNet (GTX1080Ti):
-``python train.py --regularization '3DCNNs'``
+``python train.py --regularization 'GRU'``
 
 ### Testing
 
