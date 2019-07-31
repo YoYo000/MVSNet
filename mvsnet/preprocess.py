@@ -89,9 +89,11 @@ def crop_mvs_input(images, cams, depth_image=None):
         cams[view][1][0][2] = cams[view][1][0][2] - start_w
         cams[view][1][1][2] = cams[view][1][1][2] - start_h
 
-    # crop depth image
+        # crop depth image
+        if not depth_image is None and view == 0:
+            depth_image = depth_image[start_h:finish_h, start_w:finish_w]
+
     if not depth_image is None:
-        depth_image = depth_image[start_h:finish_h, start_w:finish_w]
         return images, cams, depth_image
     else:
         return images, cams
