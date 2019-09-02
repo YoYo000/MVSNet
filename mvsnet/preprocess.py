@@ -32,7 +32,7 @@ def center_image(img):
 def scale_camera(cam, scale=1):
     """ resize input in order to produce sampled depth map """
     new_cam = np.copy(cam)
-    # focal: 
+    # focal:
     new_cam[1][0][0] = cam[1][0][0] * scale
     new_cam[1][1][1] = cam[1][1][1] * scale
     # principle point:
@@ -121,7 +121,7 @@ def load_cam(file, interval_scale=1):
         for j in range(0, 3):
             intrinsic_index = 3 * i + j + 18
             cam[1][i][j] = words[intrinsic_index]
-            
+
     if len(words) == 29:
         cam[1][3][0] = words[27]
         cam[1][3][1] = float(words[28]) * interval_scale
@@ -172,7 +172,7 @@ def load_pfm(file):
     height = None
     scale = None
     data_type = None
-    header = str(file.readline()).rstrip()
+    header = file.readline().decode('UTF-8').rstrip()
 
     if header == 'PF':
         color = True
@@ -180,20 +180,19 @@ def load_pfm(file):
         color = False
     else:
         raise Exception('Not a PFM file.')
-    dim_match = re.match(r'^(\d+)\s(\d+)\s$', file.readline())
+    dim_match = re.match(r'^(\d+)\s(\d+)\s$', file.readline().decode('UTF-8'))
     if dim_match:
         width, height = map(int, dim_match.groups())
     else:
         raise Exception('Malformed PFM header.')
     # scale = float(file.readline().rstrip())
-    scale = float((file.readline()).rstrip())
+    scale = float((file.readline()).decode('UTF-8').rstrip())
     if scale < 0: # little-endian
         data_type = '<f'
     else:
         data_type = '>f' # big-endian
     data_string = file.read()
     data = np.fromstring(data_string, data_type)
-    # data = np.fromfile(file, data_type)
     shape = (height, width, 3) if color else (height, width)
     data = np.reshape(data, shape)
     data = cv2.flip(data, 0)
@@ -206,7 +205,7 @@ def write_pfm(file, image, scale=1):
     if image.dtype.name != 'float32':
         raise Exception('Image dtype must be float32.')
 
-    image = np.flipud(image)  
+    image = np.flipud(image)
 
     if len(image.shape) == 3 and image.shape[2] == 3: # color image
         color = True
@@ -226,17 +225,17 @@ def write_pfm(file, image, scale=1):
     file.write('%f\n' % scale)
 
     image_string = image.tostring()
-    file.write(image_string)    
+    file.write(image_string)
 
     file.close()
 
 def gen_dtu_resized_path(dtu_data_folder, mode='training'):
     """ generate data paths for dtu dataset """
     sample_list = []
-    
+
     # parse camera pairs
     cluster_file_path = dtu_data_folder + '/Cameras/pair.txt'
-    
+
     # cluster_list = open(cluster_file_path).read().split()
     cluster_list = file_io.FileIO(cluster_file_path, mode='r').read().split()
 
@@ -310,13 +309,13 @@ def gen_dtu_resized_path(dtu_data_folder, mode='training'):
                 depth_image_path = os.path.join(depth_folder, ('depth_map_%04d.pfm' % ref_index))
                 paths.append(depth_image_path)
                 sample_list.append(paths)
-        
+
     return sample_list
 
 def gen_dtu_mvs_path(dtu_data_folder, mode='training'):
     """ generate data paths for dtu dataset """
     sample_list = []
-    
+
     # parse camera pairs
     cluster_file_path = dtu_data_folder + '/Cameras/pair.txt'
     cluster_list = open(cluster_file_path).read().split()
@@ -328,7 +327,7 @@ def gen_dtu_mvs_path(dtu_data_folder, mode='training'):
                     101, 102, 103, 104, 105, 107, 108, 109, 111, 112, 113, 115, 116, 119, 120,
                     121, 122, 123, 124, 125, 126, 127, 128]
     validation_set = [3, 5, 17, 21, 28, 35, 37, 38, 40, 43, 56, 59, 66, 67, 82, 86, 106, 117]
-    evaluation_set = [1, 4, 9, 10, 11, 12, 13, 15, 23, 24, 29, 32, 33, 34, 48, 49, 62, 75, 77, 
+    evaluation_set = [1, 4, 9, 10, 11, 12, 13, 15, 23, 24, 29, 32, 33, 34, 48, 49, 62, 75, 77,
                       110, 114, 118]
 
     # for each dataset
@@ -396,7 +395,7 @@ def gen_dtu_mvs_path(dtu_data_folder, mode='training'):
                 depth_image_path = os.path.join(depth_folder, ('depth_map_%04d.pfm' % ref_index))
                 paths.append(depth_image_path)
                 sample_list.append(paths)
-        
+
     return sample_list
 
 def gen_mvs_list(mode='training'):
