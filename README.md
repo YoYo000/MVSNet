@@ -1,5 +1,7 @@
 # MVSNet & R-MVSNet
 
+<font color="red"> [News] BlendedMVS dataset is released!!!</font> ([project link](https://github.com/YoYo000/BlendedMVS)). Corresponding training and evaluation codes will be updated soon.
+
 ## About
 [MVSNet](https://arxiv.org/abs/1804.02505) is a deep learning architecture for depth map inference from unstructured multi-view images, and [R-MVSNet](https://arxiv.org/abs/1902.10556) is its extension for scalable learning-based MVS reconstruction. If you find this project useful for your research, please cite:
 ```
