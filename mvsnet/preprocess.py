@@ -65,7 +65,7 @@ def scale_mvs_input(images, cams, depth_image=None, scale=1):
         depth_image = scale_image(depth_image, scale=scale, interpolation='nearest')
         return images, cams, depth_image
 
-def crop_mvs_input(images, cams, depth_image=None):
+def crop_mvs_input(images, cams, depth_image=None, max_w=0, max_h=0):
     """ resize images and cameras to fit the network (can be divided by base image size) """
 
     # crop images and cameras
@@ -81,6 +81,12 @@ def crop_mvs_input(images, cams, depth_image=None):
             new_w = FLAGS.max_w
         else:
             new_w = int(math.ceil(w / FLAGS.base_image_size) * FLAGS.base_image_size)
+
+        if max_w > 0:
+            new_w = max_w
+        if max_h > 0:
+            new_h = max_h
+
         start_h = int(math.ceil((h - new_h) / 2))
         start_w = int(math.ceil((w - new_w) / 2))
         finish_h = start_h + new_h
@@ -395,6 +401,120 @@ def gen_dtu_mvs_path(dtu_data_folder, mode='training'):
                 depth_image_path = os.path.join(depth_folder, ('depth_map_%04d.pfm' % ref_index))
                 paths.append(depth_image_path)
                 sample_list.append(paths)
+
+    return sample_list
+
+def gen_blended_mvs_path(blendedmvs_data_folder, mode='training'):
+    """ generate data paths for blendedmvs dataset """
+
+    # read data list
+    if mode == 'training':
+        proj_list = open(os.path.join(blendedmvs_data_folder, 'training_list.txt')).read().splitlines()
+    elif mode == 'validation':
+        proj_list = open(os.path.join(blendedmvs_data_folder, 'validation_list.txt')).read().splitlines()
+
+    # parse all data
+    mvs_input_list = []
+    for data_name in proj_list:
+
+        dataset_folder = os.path.join(blendedmvs_data_folder, data_name)
+
+        # read cluster
+        cluster_path = os.path.join(dataset_folder, 'cams', 'pair.txt')
+        cluster_lines = open(cluster_path).read().splitlines()
+        image_num = int(cluster_lines[0])
+
+        # get per-image info
+        for idx in range(0, image_num):
+
+            ref_idx = int(cluster_lines[2 * idx + 1])
+            cluster_info =  cluster_lines[2 * idx + 2].split()
+            total_view_num = int(cluster_info[0])
+            if total_view_num < FLAGS.view_num - 1:
+                continue
+            paths = []
+            ref_image_path = os.path.join(dataset_folder, 'blended_images', '%08d.jpg' % ref_idx)
+            ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.pfm' % ref_idx)
+            ref_cam_path = os.path.join(dataset_folder, 'cams', '%08d_cam.txt' % ref_idx)
+            paths.append(ref_image_path)
+            paths.append(ref_cam_path)
+
+            for cidx in range(0, FLAGS.view_num - 1):
+                view_idx = int(cluster_info[2 * cidx + 1])
+                view_image_path = os.path.join(dataset_folder, 'blended_images', '%08d.jpg' % view_idx)
+                view_cam_path = os.path.join(dataset_folder, 'cams', '%08d_cam.txt' % view_idx)
+                paths.append(view_image_path)
+                paths.append(view_cam_path)
+            paths.append(ref_depth_path)
+
+            mvs_input_list.append(paths)
+
+    return mvs_input_list
+
+def gen_eth3d_path(eth3d_data_folder, mode='training'):
+    """ generate data paths for eth3d dataset """
+
+    sample_list = []
+
+    data_names = []
+    if mode == 'training':
+        data_names = ['delivery_area', 'electro', 'forest']
+    elif mode == 'validation':
+        data_names = ['playground', 'terrains']
+
+    for data_name in data_names:
+
+        data_folder = os.path.join(eth3d_data_folder, data_name)
+
+        image_folder = os.path.join(data_folder, 'images')
+        depth_folder = os.path.join(data_folder, 'depths')
+        cam_folder = os.path.join(data_folder, 'cams')
+
+        # index to image name
+        index2name = dict()
+        dict_file = os.path.join(cam_folder,'index2prefix.txt')
+        dict_list = file_io.FileIO(dict_file, mode='r').read().split()
+        dict_size = int(dict_list[0])
+        for i in range(0, dict_size):
+            index = int(dict_list[2 * i + 1])
+            name = str(dict_list[2 * i + 2])
+            index2name[index] = name
+
+        # image name to depth name 
+        name2depth = dict()
+        name2depth['images_rig_cam4_undistorted'] = 'images_rig_cam4'
+        name2depth['images_rig_cam5_undistorted'] = 'images_rig_cam5'
+        name2depth['images_rig_cam6_undistorted'] = 'images_rig_cam6'
+        name2depth['images_rig_cam7_undistorted'] = 'images_rig_cam7'
+
+        # cluster
+        cluster_file = os.path.join(cam_folder,'pair.txt')
+        cluster_list = file_io.FileIO(cluster_file, mode='r').read().split()
+        for p in range(0, int(cluster_list[0])):
+            paths = []
+            # ref image
+            ref_index = int(cluster_list[22 * p + 1])
+            ref_image_name = index2name[ref_index]
+            ref_image_path = os.path.join(image_folder, ref_image_name)
+            ref_cam_path = os.path.join(cam_folder, ('%08d_cam.txt' % ref_index))
+            paths.append(ref_image_path)
+            paths.append(ref_cam_path)
+            # view images
+            for view in range(FLAGS.view_num - 1):
+                view_index = int(cluster_list[22 * p + 2 * view + 3])
+                view_image_name = index2name[view_index]
+                view_image_path = os.path.join(image_folder, view_image_name)
+                view_cam_path = os.path.join(cam_folder, ('%08d_cam.txt' % view_index))
+                paths.append(view_image_path)
+                paths.append(view_cam_path)
+            # depth path
+            image_prefix = os.path.split(ref_image_name)[1]
+            depth_sub_folder = name2depth[os.path.split(ref_image_name)[0]]
+            ref_depth_name = os.path.join(depth_sub_folder, image_prefix)
+            ref_depth_name = os.path.splitext(ref_depth_name)[0] + '.pfm'
+            depth_image_path = os.path.join(depth_folder, ref_depth_name)
+            paths.append(depth_image_path)
+            sample_list.append(paths)
 
     return sample_list
 
