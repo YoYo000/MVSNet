@@ -404,7 +404,7 @@ def gen_dtu_mvs_path(dtu_data_folder, mode='training'):
 
     return sample_list
 
-def gen_blended_mvs_path(blendedmvs_data_folder, mode='training'):
+def gen_blendedmvs_path(blendedmvs_data_folder, mode='training'):
     """ generate data paths for blendedmvs dataset """
 
     # read data list

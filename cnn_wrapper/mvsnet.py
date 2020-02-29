@@ -113,7 +113,7 @@ class RegNetUS0(Network):
     """network for regularizing 3D cost volume in a encoder-decoder style. Keeping original size."""
 
     def setup(self):
-        print ('3D with 8 filters')
+        print ('Shallow 3D UNet with 8 channel input')
         base_filter = 8
         (self.feed('data')
         .conv_bn(3, base_filter * 2, 2, center=True, scale=True, name='3dconv1_0')

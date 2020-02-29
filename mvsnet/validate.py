@@ -14,8 +14,8 @@ import argparse
 import numpy as np
 
 import cv2
-import matplotlib.pyplot as plt
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 sys.path.append("../")
 from tools.common import Notify
@@ -116,7 +116,7 @@ class MVSGenerator:
 
 def validate_mvsnet(mvs_list):
     """ validate mvsnet """
-    print ('sample number: ', len(mvs_list))
+    print ('Validation sample number: ', len(mvs_list))
 
     # Training and validation generators
     mvs_generator = iter(MVSGenerator(mvs_list, FLAGS.view_num))
@@ -229,7 +229,7 @@ def main(argv=None):
     """ program entrance """
     # gen validation list
     if FLAGS.validate_set == 'blendedmvs':
-        sample_list = gen_blended_mvs_path(FLAGS.blendedmvs_data_root, mode='validation')
+        sample_list = gen_blendedmvs_path(FLAGS.blendedmvs_data_root, mode='validation')
     elif FLAGS.validate_set == 'eth3d':
         sample_list = gen_eth3d_path(FLAGS.eth3d_data_root, mode='validation')
     elif FLAGS.validate_set == 'dtu':
@@ -239,4 +239,5 @@ def main(argv=None):
     validate_mvsnet(sample_list)
 
 if __name__ == '__main__':
+    print ('Validating MVSNet with totally %d view inputs (including reference view)' % FLAGS.view_num)
     tf.app.run()

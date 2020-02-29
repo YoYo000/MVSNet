@@ -16,6 +16,7 @@ from random import randint
 import cv2
 import numpy as np
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 import matplotlib.pyplot as plt
 
@@ -26,20 +27,29 @@ from preprocess import *
 from model import *
 from loss import * 
 from homography_warping import get_homographies, homography_warping
+import photometric_augmentation as photaug
 
 # paths
-tf.app.flags.DEFINE_string('dtu_data_root', '/data/dtu/', 
+tf.app.flags.DEFINE_string('blendedmvs_data_root', '/gl3d/BlendedMVS/dataset_low_res', 
                            """Path to dtu dataset.""")
-tf.app.flags.DEFINE_string('log_dir', '/data/tf_log',
+tf.app.flags.DEFINE_string('eth3d_data_root', '/data/eth3d/lowres/training/undistorted', 
+                           """Path to dtu dataset.""")
+tf.app.flags.DEFINE_string('dtu_data_root', '/data/dtu', 
+                           """Path to dtu dataset.""")
+tf.app.flags.DEFINE_boolean('train_blendedmvs', False, 
+                            """Whether to train.""")
+tf.app.flags.DEFINE_boolean('train_dtu', False, 
+                            """Whether to train.""")
+tf.app.flags.DEFINE_boolean('train_eth3d', False, 
+                            """Whether to train.""")
+tf.app.flags.DEFINE_string('log_folder', '/data/tf_log',
                            """Path to store the log.""")
-tf.app.flags.DEFINE_string('model_dir', '/data/tf_model',
+tf.app.flags.DEFINE_string('model_folder', '/data/tf_model',
                            """Path to save the model.""")
-tf.app.flags.DEFINE_boolean('train_dtu', True, 
-                            """Whether to train.""")
-tf.app.flags.DEFINE_boolean('use_pretrain', True, 
-                            """Whether to train.""")
 tf.app.flags.DEFINE_integer('ckpt_step', 0,
                             """ckpt step.""")
+tf.app.flags.DEFINE_boolean('use_pretrain', False, 
+                            """Whether to train.""")
 
 # input parameters
 tf.app.flags.DEFINE_integer('view_num', 3, 
@@ -51,8 +61,6 @@ tf.app.flags.DEFINE_integer('max_w', 640,
 tf.app.flags.DEFINE_integer('max_h', 512, 
                             """Maximum image height when training.""")
 tf.app.flags.DEFINE_float('sample_scale', 0.25, 
-                            """Downsample scale for building cost volume.""")
-tf.app.flags.DEFINE_float('interval_scale', 1.06, 
                             """Downsample scale for building cost volume.""")
 
 # network architectures
@@ -68,8 +76,6 @@ tf.app.flags.DEFINE_integer('batch_size', 1,
                             """Training batch size.""")
 tf.app.flags.DEFINE_integer('epoch', 6, 
                             """Training epoch number.""")
-tf.app.flags.DEFINE_float('val_ratio', 0, 
-                          """Ratio of validation set when splitting dataset.""")
 tf.app.flags.DEFINE_float('base_lr', 0.001,
                           """Base learning rate.""")
 tf.app.flags.DEFINE_integer('display', 1,
@@ -80,9 +86,39 @@ tf.app.flags.DEFINE_integer('snapshot', 5000,
                             """Step interval to save the model.""")
 tf.app.flags.DEFINE_float('gamma', 0.9,
                           """Learning rate decay rate.""")
-
+tf.app.flags.DEFINE_boolean('online_augmentation', False,
+                           """Whether to apply image online augmentation during training""")
 
 FLAGS = tf.app.flags.FLAGS
+
+
+def online_augmentation(image, random_order=True):
+    primitives = photaug.augmentations
+    config = {}
+    config['random_brightness'] = {'max_abs_change': 50}
+    config['random_contrast'] = {'strength_range': [0.3, 1.5]}
+    config['additive_gaussian_noise'] = {'stddev_range': [0, 10]}
+    config['additive_speckle_noise'] = {'prob_range': [0, 0.0035]}
+    config['additive_shade'] = {'transparency_range': [-0.5, 0.5], 'kernel_size_range': [100, 150]}
+    config['motion_blur'] = {'max_kernel_size': 3}
+
+    with tf.name_scope('online_augmentation'):
+        prim_configs = [config.get(p, {}) for p in primitives]
+
+        indices = tf.range(len(primitives))
+        if random_order:
+            indices = tf.random.shuffle(indices)
+
+        def step(i, image):
+            fn_pairs = [(tf.equal(indices[i], j), lambda p=p, c=c: getattr(photaug, p)(image, **c))
+                        for j, (p, c) in enumerate(zip(primitives, prim_configs))]
+            image = tf.case(fn_pairs)
+            return i + 1, image
+
+        _, aug_image = tf.while_loop(lambda i, image: tf.less(i, len(primitives)),
+                                     step, [0, image], parallel_iterations=1)
+
+    return aug_image
 
 class MVSGenerator:
     """ data generator class, tf only accept generator without param """
@@ -101,12 +137,26 @@ class MVSGenerator:
                 images = []
                 cams = []
                 for view in range(self.view_num):
-                    image = center_image(cv2.imread(data[2 * view]))
+                    image = cv2.imread(data[2 * view])
                     cam = load_cam(open(data[2 * view + 1]))
-                    cam[1][3][1] = cam[1][3][1] * FLAGS.interval_scale
+                    cam[1, 3, 1] = (cam[1, 3, 3] - cam[1, 3, 0]) / FLAGS.max_d
+                    cam[1, 3, 2] = FLAGS.max_d
                     images.append(image)
                     cams.append(cam)
                 depth_image = load_pfm(open(data[2 * self.view_num]))
+
+                if FLAGS.train_eth3d:
+                    # crop images
+                    images, cams, depth_image = crop_mvs_input(
+                        images, cams, depth_image, max_w=FLAGS.max_w, max_h=FLAGS.max_h)
+                    # downsize by 4 to fit depth map output
+                    depth_image = scale_image(depth_image, scale=FLAGS.sample_scale)
+                    cams = scale_mvs_camera(cams, scale=FLAGS.sample_scale)
+
+                if FLAGS.train_blendedmvs:
+                    # downsize by 4 to fit depth map output
+                    depth_image = scale_image(depth_image, scale=FLAGS.sample_scale)
+                    cams = scale_mvs_camera(cams, scale=FLAGS.sample_scale)
 
                 # mask out-of-range depth pixels (in a relaxed range)
                 depth_start = cams[0][1, 3, 0] + cams[0][1, 3, 1]
@@ -173,7 +223,7 @@ def train(traning_list):
     training_sample_size = len(traning_list)
     if FLAGS.regularization == 'GRU':
         training_sample_size = training_sample_size * 2
-    print ('sample number: ', training_sample_size)
+    print ('Training sample number: ', training_sample_size)
 
     with tf.Graph().as_default(), tf.device('/cpu:0'): 
 
@@ -198,8 +248,19 @@ def train(traning_list):
         for i in xrange(FLAGS.num_gpus):
             with tf.device('/gpu:%d' % i):
                 with tf.name_scope('Model_tower%d' % i) as scope:
-                    # generate data
+                    # get data
                     images, cams, depth_image = training_iterator.get_next()
+
+                    # photometric augmentation and image normalization 
+                    arg_images = []
+                    for view in range(0, FLAGS.view_num):
+                        image = tf.squeeze(tf.slice(images, [0, view, 0, 0, 0], [-1, 1, -1, -1, 3]), axis=1)
+                        if FLAGS.online_augmentation:
+                            image = tf.map_fn(online_augmentation, image, back_prop=False) 
+                        image = tf.image.per_image_standardization(image)                   
+                        arg_images.append(image)
+                    images = tf.stack(arg_images, axis=1)
+
                     images.set_shape(tf.TensorShape([None, FLAGS.view_num, None, None, 3]))
                     cams.set_shape(tf.TensorShape([None, FLAGS.view_num, 2, 4, 4]))
                     depth_image.set_shape(tf.TensorShape([None, None, None, 1]))
@@ -287,11 +348,11 @@ def train(traning_list):
             # initialization
             total_step = 0
             sess.run(init_op)
-            summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
+            summary_writer = tf.summary.FileWriter(FLAGS.log_folder, sess.graph)
 
             # load pre-trained model
             if FLAGS.use_pretrain:
-                pretrained_model_path = os.path.join(FLAGS.model_dir, FLAGS.regularization, 'model.ckpt')
+                pretrained_model_path = os.path.join(FLAGS.model_folder, FLAGS.regularization, 'model.ckpt')
                 restorer = tf.train.Saver(tf.global_variables())
                 restorer.restore(sess, '-'.join([pretrained_model_path, str(FLAGS.ckpt_step)]))
                 print(Notify.INFO, 'Pre-trained model restored from %s' %
@@ -328,7 +389,7 @@ def train(traning_list):
                    
                     # save the model checkpoint periodically
                     if (total_step % FLAGS.snapshot == 0 or step == (training_sample_size - 1)):
-                        model_folder = os.path.join(FLAGS.model_dir, FLAGS.regularization)
+                        model_folder = os.path.join(FLAGS.model_folder, FLAGS.regularization)
                         if not os.path.exists(model_folder):
                             os.mkdir(model_folder)
                         ckpt_path = os.path.join(model_folder, 'model.ckpt')
@@ -340,7 +401,12 @@ def train(traning_list):
 def main(argv=None):  # pylint: disable=unused-argument
     """ program entrance """
     # Prepare all training samples
-    sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root)
+    if FLAGS.train_blendedmvs:
+        sample_list = gen_blendedmvs_path(FLAGS.blendedmvs_data_root, mode='training')
+    if FLAGS.train_dtu:
+        sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root)
+    if FLAGS.train_eth3d:
+        sample_list = gen_eth3d_path(FLAGS.eth3d_data_root, mode='training')
     # Shuffle
     random.shuffle(sample_list)
     # Training entrance.
@@ -348,5 +414,6 @@ def main(argv=None):  # pylint: disable=unused-argument
 
 
 if __name__ == '__main__':
-    print ('Training MVSNet with %d views' % FLAGS.view_num)
+    print ('Training MVSNet with totally %d views inputs (including reference view)' % FLAGS.view_num)
     tf.app.run()
+

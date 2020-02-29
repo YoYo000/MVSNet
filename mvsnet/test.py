@@ -15,6 +15,7 @@ import numpy as np
 
 import cv2
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 sys.path.append("../")
 from tools.common import Notify
@@ -22,13 +23,13 @@ from preprocess import *
 from model import *
 from loss import *
 
-# dataset parameters
+# input path
 tf.app.flags.DEFINE_string('dense_folder', None, 
                            """Root path to dense folder.""")
-tf.app.flags.DEFINE_string('model_dir', 
-                           '/data/tf_model',
+tf.app.flags.DEFINE_string('pretrained_model_ckpt_path', 
+                           '/data/tf_model/3DCNNs/BlendedMVS/blended_augmented/model.ckpt',
                            """Path to restore the model.""")
-tf.app.flags.DEFINE_integer('ckpt_step', 100000,
+tf.app.flags.DEFINE_integer('ckpt_step', 150000,
                             """ckpt step.""")
 
 # input parameters
@@ -146,7 +147,7 @@ class MVSGenerator:
 def mvsnet_pipeline(mvs_list):
 
     """ mvsnet in altizure pipeline """
-    print ('sample number: ', len(mvs_list))
+    print ('Testing sample number: ', len(mvs_list))
 
     # create output folder
     output_folder = os.path.join(FLAGS.dense_folder, 'depths_mvsnet')
@@ -213,12 +214,12 @@ def mvsnet_pipeline(mvs_list):
         total_step = 0
 
         # load model
-        if FLAGS.model_dir is not None:
-            pretrained_model_ckpt_path = os.path.join(FLAGS.model_dir, FLAGS.regularization, 'model.ckpt') 
+        if FLAGS.pretrained_model_ckpt_path is not None:
             restorer = tf.train.Saver(tf.global_variables())
-            restorer.restore(sess, '-'.join([pretrained_model_ckpt_path, str(FLAGS.ckpt_step)]))
+            restorer.restore(
+                sess, '-'.join([FLAGS.pretrained_model_ckpt_path, str(FLAGS.ckpt_step)]))
             print(Notify.INFO, 'Pre-trained model restored from %s' %
-                  ('-'.join([pretrained_model_ckpt_path, str(FLAGS.ckpt_step)])), Notify.ENDC)
+                  ('-'.join([FLAGS.pretrained_model_ckpt_path, str(FLAGS.ckpt_step)])), Notify.ENDC)
             total_step = FLAGS.ckpt_step
     
         # run inference for each reference view
@@ -270,4 +271,5 @@ def main(_):  # pylint: disable=unused-argument
 
 
 if __name__ == '__main__':
+    print ('Testing MVSNet with totally %d view inputs (including reference view)' % FLAGS.view_num)
     tf.app.run()
