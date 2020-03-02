@@ -30,7 +30,7 @@ from homography_warping import get_homographies, homography_warping
 import photometric_augmentation as photaug
 
 # paths
-tf.app.flags.DEFINE_string('blendedmvs_data_root', '/gl3d/BlendedMVS/dataset_low_res', 
+tf.app.flags.DEFINE_string('blendedmvs_data_root', '/data/BlendedMVS/dataset_low_res', 
                            """Path to dtu dataset.""")
 tf.app.flags.DEFINE_string('eth3d_data_root', '/data/eth3d/lowres/training/undistorted', 
                            """Path to dtu dataset.""")
@@ -139,24 +139,36 @@ class MVSGenerator:
                 for view in range(self.view_num):
                     image = cv2.imread(data[2 * view])
                     cam = load_cam(open(data[2 * view + 1]))
-                    cam[1, 3, 1] = (cam[1, 3, 3] - cam[1, 3, 0]) / FLAGS.max_d
-                    cam[1, 3, 2] = FLAGS.max_d
                     images.append(image)
                     cams.append(cam)
                 depth_image = load_pfm(open(data[2 * self.view_num]))
 
-                if FLAGS.train_eth3d:
+                # dataset specified process
+                if FLAGS.train_blendedmvs:
+                    # downsize by 4 to fit depth map output
+                    depth_image = scale_image(depth_image, scale=FLAGS.sample_scale)
+                    cams = scale_mvs_camera(cams, scale=FLAGS.sample_scale)
+
+                elif FLAGS.train_dtu:
+                    # set depth range to [425, 937]
+                    cams[0][1, 3, 0] = 425
+                    cams[0][1, 3, 3] = 937
+
+                elif FLAGS.train_eth3d:
                     # crop images
                     images, cams, depth_image = crop_mvs_input(
                         images, cams, depth_image, max_w=FLAGS.max_w, max_h=FLAGS.max_h)
                     # downsize by 4 to fit depth map output
                     depth_image = scale_image(depth_image, scale=FLAGS.sample_scale)
                     cams = scale_mvs_camera(cams, scale=FLAGS.sample_scale)
+                
+                else:
+                    print ('Please specify a valid training dataset.')
+                    exit(-1)
 
-                if FLAGS.train_blendedmvs:
-                    # downsize by 4 to fit depth map output
-                    depth_image = scale_image(depth_image, scale=FLAGS.sample_scale)
-                    cams = scale_mvs_camera(cams, scale=FLAGS.sample_scale)
+                # fix depth range and adapt depth sample number 
+                cams[0][1, 3, 2] = FLAGS.max_d
+                cams[0][1, 3, 1] = (cams[0][1, 3, 3] - cams[0][1, 3, 0]) / FLAGS.max_d
 
                 # mask out-of-range depth pixels (in a relaxed range)
                 depth_start = cams[0][1, 3, 0] + cams[0][1, 3, 1]
