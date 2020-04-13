@@ -404,12 +404,14 @@ def gen_dtu_mvs_path(dtu_data_folder, mode='training'):
 
     return sample_list
 
-def gen_blendedmvs_path(blendedmvs_data_folder, mode='training'):
+def gen_blendedmvs_path(blendedmvs_data_folder, mode='training_mvs'):
     """ generate data paths for blendedmvs dataset """
 
     # read data list
-    if mode == 'training':
-        proj_list = open(os.path.join(blendedmvs_data_folder, 'training_list.txt')).read().splitlines()
+    if mode == 'training_mvs':
+        proj_list = open(os.path.join(blendedmvs_data_folder, 'BlendedMVS_training.txt')).read().splitlines()
+    elif mode == 'training_mvg':
+        proj_list = open(os.path.join(blendedmvs_data_folder, 'BlendedMVG_training.txt')).read().splitlines()
     elif mode == 'validation':
         proj_list = open(os.path.join(blendedmvs_data_folder, 'validation_list.txt')).read().splitlines()
 
@@ -433,7 +435,7 @@ def gen_blendedmvs_path(blendedmvs_data_folder, mode='training'):
             if total_view_num < FLAGS.view_num - 1:
                 continue
             paths = []
-            ref_image_path = os.path.join(dataset_folder, 'blended_images', '%08d.jpg' % ref_idx)
+            ref_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.jpg' % ref_idx)
             ref_depth_path = os.path.join(dataset_folder, 'rendered_depth_maps', '%08d.pfm' % ref_idx)
             ref_cam_path = os.path.join(dataset_folder, 'cams', '%08d_cam.txt' % ref_idx)
             paths.append(ref_image_path)
@@ -441,7 +443,7 @@ def gen_blendedmvs_path(blendedmvs_data_folder, mode='training'):
 
             for cidx in range(0, FLAGS.view_num - 1):
                 view_idx = int(cluster_info[2 * cidx + 1])
-                view_image_path = os.path.join(dataset_folder, 'blended_images', '%08d.jpg' % view_idx)
+                view_image_path = os.path.join(dataset_folder, 'blended_images', '%08d_masked.jpg' % view_idx)
                 view_cam_path = os.path.join(dataset_folder, 'cams', '%08d_cam.txt' % view_idx)
                 paths.append(view_image_path)
                 paths.append(view_cam_path)

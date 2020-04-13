@@ -38,6 +38,8 @@ tf.app.flags.DEFINE_string('dtu_data_root', '/data/dtu',
                            """Path to dtu dataset.""")
 tf.app.flags.DEFINE_boolean('train_blendedmvs', False, 
                             """Whether to train.""")
+tf.app.flags.DEFINE_boolean('train_blendedmvg', False, 
+                            """Whether to train.""")
 tf.app.flags.DEFINE_boolean('train_dtu', False, 
                             """Whether to train.""")
 tf.app.flags.DEFINE_boolean('train_eth3d', False, 
@@ -165,6 +167,10 @@ class MVSGenerator:
                 else:
                     print ('Please specify a valid training dataset.')
                     exit(-1)
+		
+                # skip invalid views
+                if cams[0][1, 3, 0] <= 0 or cams[0][1, 3, 3] <= 0:
+                    continue			
 
                 # fix depth range and adapt depth sample number 
                 cams[0][1, 3, 2] = FLAGS.max_d
@@ -414,7 +420,9 @@ def main(argv=None):  # pylint: disable=unused-argument
     """ program entrance """
     # Prepare all training samples
     if FLAGS.train_blendedmvs:
-        sample_list = gen_blendedmvs_path(FLAGS.blendedmvs_data_root, mode='training')
+        sample_list = gen_blendedmvs_path(FLAGS.blendedmvs_data_root, mode='training_mvs')
+    if FLAGS.train_blendedmvg:
+        sample_list = gen_blendedmvs_path(FLAGS.blendedmvs_data_root, mode='training_mvg')
     if FLAGS.train_dtu:
         sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root)
     if FLAGS.train_eth3d:

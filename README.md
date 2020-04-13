@@ -57,6 +57,7 @@ If [BlendedMVS dataset](https://github.com/YoYo000/BlendedMVS) is used in your r
 ``python train.py --regularization 'GRU' --train_eth3d --max_w 896 --max_h 480 --max_d 128``  <br>
 * Specify your input training data folders using  ``--blendedmvs_data_root``, ``--dtu_data_root`` and ``--eth3d_data_root``
 * Specify your output log and model folders using ``--log_folder`` and  ``--model_folder``
+* Switch from BlendeMVS to BlendedMVG by replacing  using  ``--train_blendedmvs`` with ``--train_blendedmvg``
 
 ### Validation
 
@@ -70,7 +71,7 @@ If [BlendedMVS dataset](https://github.com/YoYo000/BlendedMVS) is used in your r
 ``python validate.py --regularization 'GRU' --validate_set eth3d --max_w 896 --max_h 480 --max_d 128``<br>
 * Specify your input model check point using  ``--pretrained_model_ckpt_path`` and ``--ckpt_step``
 * Specify your input training data folders using  ``--blendedmvs_data_root``, ``--dtu_data_root`` and ``--eth3d_data_root``
-* Specify your output result file ``--log_folder`` and  ``--model_folder``
+* Specify your output result file using ``--validation_result_path``
 
 ### Testing
 * Download test data [scan9](https://drive.google.com/file/d/17ZoojQSubtzQhLCWXjxDLznF2vbKz81E/view?usp=sharing) and unzip it to ``TEST_DATA_FOLDER`` folder
@@ -182,6 +183,9 @@ The depth sample number will be automatically computed using the inverse depth s
 The ``test.py`` script will create a `depths_mvsnet` folder to store the running results, including the depth maps, probability maps, scaled/cropped images and the corresponding cameras. The depth and probability maps are stored in `.pfm` format. We provide the python IO for pfm files in the `preprocess.py` script, and for the c++ IO, we refer users to the [Cimg](http://cimg.eu/) library. To inspect the pfm format results, you can simply type `python visualize.py .pfm`. 
 
 ## Changelog
+
+### 2020 April 13
+* Update BlendedMVG interface
 
 ### 2020 March 2
 * Pretrained models on BlendedMVS, DTU and ETH3D (trained for 150000 iterations)
