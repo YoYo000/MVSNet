@@ -1,9 +1,9 @@
 tensorflow-gpu>=1.5
 progressbar2>=3.0
 numpy>=1.13
-opencv-python>=3.2
+opencv-python>=3.2,<=4.2.0.32
 scikit-learn>=0.18
 scipy>=0.18
 matplotlib>=1.5
 Pillow>=3.1.2
-nvidia-ml-py>=375.53.1
+nvidia-ml-py>=375.53
